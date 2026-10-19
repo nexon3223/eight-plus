@@ -1,0 +1,14 @@
+[Unit]
+Description=Eight Sleep Pod front LED (IS31FL3194) -> Home Assistant MQTT light
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/opt/es-led/venv/bin/python /opt/es-led/es_led.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target

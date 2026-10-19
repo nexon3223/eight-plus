@@ -1,0 +1,39 @@
+name: test
+on: [push, pull_request]
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: {python-version: "3.12"}
+      - run: pip install pyyaml jinja2
+      - run: python3 tests/test_generator.py
+      - run: python3 tests/test_installer.py
+      - run: python3 tests/test_standalone.py
+      - run: python3 tests/test_detect.py
+      - uses: actions/setup-node@v4
+        with: {node-version: "20"}
+      - name: card parses
+        run: node --check eight-sleep-card.js
+      - name: bundled card matches the HACS card
+        run: cmp eight-sleep-card.js eight_plus/app/bundle/eight-sleep-card.js
+      - name: gateway compiles
+        run: python3 -m py_compile gateway/*/*.py
+      - name: no private addresses or credentials
+        run: |
+          ! grep -rnIE '192\.168\.[0-9]+\.[0-9]+|MQTT_PASS *= *"[^"]+"' --exclude-dir=.git --exclude=sync_gateway.py --exclude=sync_card.py .
+      - name: add-on version matches the app
+        run: |
+          test "$(cat eight_plus/app/VERSION)" = "$(grep '^version:' eight_plus/config.yaml | tr -d '" ' | cut -d: -f2)"
+  hacs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: hacs/action@main
+        with: {category: plugin}
+  addon-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: frenck/action-addon-linter@v2
+        with: {path: "./eight_plus"}

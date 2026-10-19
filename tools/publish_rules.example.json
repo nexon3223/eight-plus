@@ -1,0 +1,22 @@
+{
+  "_comment": "Copy to tools/publish_rules.local.json (gitignored). Only needed by the maintainer, whose development card's defaults are their own household's entities; sync_card.py swaps these for generic, derived defaults and refuses to write if any 'leaks' pattern survives.",
+  "author_prefix": "eight_sleep_alex",
+  "partner_prefix": "eight_sleep_sam",
+  "author_cloud_side": "alex_s_eight_sleep_side",
+  "partner_cloud_side": "sam_s_eight_sleep_side",
+  "account_cloud_prefix": "example_com_s_eight_sleep_",
+  "values": {
+    "sensor.some_odd_helper_name": "`sensor.${__P}_bed_temp_rate`"
+  },
+  "blank": [
+    "sensor.bedroom_temperature",
+    "light.bedroom_lamp"
+  ],
+  "regex_replace": [
+    [" ?\\(Alex[^)]*\\)", ""]
+  ],
+  "text_replace": [
+    ["eight_sleep_alex_", "eight_sleep_<name>_"]
+  ],
+  "leaks": "alex|sam|example_com"
+}

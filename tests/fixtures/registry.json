@@ -1,0 +1,350 @@
+[
+ {
+  "entity_id": "climate.eight_sleep_pod_left",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_ctl_left",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.eight_sleep_pod_left_presence",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_left_present",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_left_heart_rate",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_left_heart_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_left_hrv",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_left_hrv",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_left_breathing_rate",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_left_breathing_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_left_water_temp",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_left_water_temp",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "climate.eight_sleep_pod_right",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_ctl_right",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.eight_sleep_pod_right_presence",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_right_present",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_right_heart_rate",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_right_heart_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_right_hrv",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_right_hrv",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_right_breathing_rate",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_right_breathing_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_right_water_temp",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_right_water_temp",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.eight_sleep_pod_water_low",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_ctl_water_low",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.eight_sleep_pod_priming",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_ctl_priming",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "button.eight_sleep_pod_prime",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_ctl_prime",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_health",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_wd_health",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "button.eight_sleep_pod_reboot",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_wd_reboot",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "light.eight_sleep_pod_front_led",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_led",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.eight_sleep_pod_room_temperature",
+  "platform": "mqtt",
+  "unique_id": "eight_pod_bio_room_temperature",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "climate.pod_3_left_temperature",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_left_temperature",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.pod_3_left_presence",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_left_bed_presence",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.pod_3_left_heart_rate",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_left_heart_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.pod_3_left_hrv",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_left_hrv",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.pod_3_left_respiration_rate",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_left_respiration_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "switch.pod_3_left_away_mode",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_left_away_mode",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "climate.pod_3_right_temperature",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_right_temperature",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.pod_3_right_presence",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_right_bed_presence",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.pod_3_right_heart_rate",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_right_heart_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.pod_3_right_hrv",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_right_hrv",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.pod_3_right_respiration_rate",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_right_respiration_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "switch.pod_3_right_away_mode",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_right_away_mode",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.pod_3_water_level",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_water_level",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.pod_3_priming",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_priming",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "button.pod_3_prime",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_prime",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "switch.pod_3_prime_daily",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_prime_daily",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "switch.pod_3_biometrics",
+  "platform": "free_sleep",
+  "unique_id": "01ABCDEFGHJKMNPQRSTVWXYZ00_biometrics",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "climate.alex_s_eight_sleep_side_climate",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.aaaa1111bbbb2222cccc3333dddd4444.climate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.alex_s_eight_sleep_side_current_heart_rate",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.aaaa1111bbbb2222cccc3333dddd4444.current_heart_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.alex_s_eight_sleep_side_current_hrv",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.aaaa1111bbbb2222cccc3333dddd4444.current_hrv",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.alex_s_eight_sleep_side_current_breath_rate",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.aaaa1111bbbb2222cccc3333dddd4444.current_breath_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.alex_s_eight_sleep_side_bed_temperature",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.aaaa1111bbbb2222cccc3333dddd4444.bed_temperature",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.alex_s_eight_sleep_side_side",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.aaaa1111bbbb2222cccc3333dddd4444.side",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.alex_s_eight_sleep_side_bed_state",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.aaaa1111bbbb2222cccc3333dddd4444.bed_state",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.alex_s_eight_sleep_side_next_alarm",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.aaaa1111bbbb2222cccc3333dddd4444.next_alarm",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.alex_s_eight_sleep_side_bed_presence",
+  "platform": "eight_sleep",
+  "unique_id": "aaaa1111bbbb2222cccc3333dddd4444_bed_presence",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.alex_s_eight_sleep_side_bed_presence_sensor",
+  "platform": "eight_sleep",
+  "unique_id": "aaaa1111bbbb2222cccc3333dddd4444_bed_presence",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "climate.sam_s_eight_sleep_side_climate",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.eeee5555ffff6666aaaa7777bbbb8888.climate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.sam_s_eight_sleep_side_current_heart_rate",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.eeee5555ffff6666aaaa7777bbbb8888.current_heart_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.sam_s_eight_sleep_side_current_hrv",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.eeee5555ffff6666aaaa7777bbbb8888.current_hrv",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.sam_s_eight_sleep_side_current_breath_rate",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.eeee5555ffff6666aaaa7777bbbb8888.current_breath_rate",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.sam_s_eight_sleep_side_bed_temperature",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.eeee5555ffff6666aaaa7777bbbb8888.bed_temperature",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.sam_s_eight_sleep_side_side",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.eeee5555ffff6666aaaa7777bbbb8888.side",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.sam_s_eight_sleep_side_bed_state",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.eeee5555ffff6666aaaa7777bbbb8888.bed_state",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.sam_s_eight_sleep_side_next_alarm",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.eeee5555ffff6666aaaa7777bbbb8888.next_alarm",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "binary_sensor.sam_s_eight_sleep_side_bed_presence",
+  "platform": "eight_sleep",
+  "unique_id": "eeee5555ffff6666aaaa7777bbbb8888_bed_presence",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.sam_s_eight_sleep_side_bed_presence_sensor",
+  "platform": "eight_sleep",
+  "unique_id": "eeee5555ffff6666aaaa7777bbbb8888_bed_presence",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.home_s_eight_sleep_has_water",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.has_water",
+  "disabled_by": null
+ },
+ {
+  "entity_id": "sensor.home_s_eight_sleep_is_priming",
+  "platform": "eight_sleep",
+  "unique_id": "0123456789abcdef0123456789abcdef01234567.is_priming",
+  "disabled_by": null
+ }
+]

@@ -1,0 +1,139 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Eight+ card preview</title>
+<!--
+  Mock-Home-Assistant preview of the card for each backend — no HA needed.
+    python3 -m http.server 8780        (from the repo root)
+    open http://localhost:8780/tools/preview.html?source=cloud     (cloud | freesleep | gateway)
+  Left column: the card-only config (just source + entity). Right: the config the add-on writes.
+-->
+<style>
+  :root { color-scheme: dark; }
+  body { margin: 0; background: #0b0b0f; color: #e8e8ea; font: 13px/1.5 system-ui, sans-serif; }
+  header { display: flex; gap: 8px; align-items: center; padding: 14px 16px; flex-wrap: wrap; }
+  header a { color: #b79bff; text-decoration: none; padding: 4px 10px; border: 1px solid #333; border-radius: 99px; }
+  header a.on { background: #b79bff; color: #0b0b0f; border-color: #b79bff; }
+  #row { display: flex; gap: 24px; padding: 0 16px 16px; flex-wrap: wrap; }
+  .col { width: 390px; max-width: 100%; }
+  .lbl { margin: 0 0 6px; color: #9a9aa2; }
+  #log { padding: 0 16px 12px; font-family: ui-monospace, monospace; white-space: pre-wrap; }
+  .ok { color: #33d17a; } .bad { color: #ff6b6b; }
+</style>
+</head>
+<body>
+<header><strong>Eight+ preview</strong>
+  <a href="?source=cloud">Eight Sleep cloud</a><a href="?source=freesleep">free-sleep</a><a href="?source=gateway">Pod gateway</a>
+</header>
+<div id="log">loading…</div>
+<div id="row"></div>
+<script type="module">
+const errors = [];
+addEventListener("error", (e) => errors.push(String(e.message)));
+addEventListener("unhandledrejection", (e) => errors.push(String(e.reason)));
+const source = new URLSearchParams(location.search).get("source") || "cloud";
+document.querySelectorAll("header a").forEach((a) => a.classList.toggle("on", a.search === "?source=" + source));
+await import("../eight-sleep-card.js?t=" + Date.now());
+
+const P = "eight_sleep_alex", PP = "eight_sleep_sam";
+const st = (state, attributes = {}) => ({ state: String(state), attributes, last_changed: new Date(Date.now() - 3600e3).toISOString() });
+const dt = (t) => st(t + ":00", { has_date: false, has_time: true });
+const climate = (on, t, cur) => st(on ? "heat_cool" : "off", { temperature: t, current_temperature: cur, hvac_action: on ? "heating" : "off", min_temp: 13, max_temp: 44, target_temp_step: 0.5, hvac_modes: ["off", "heat_cool"] });
+const states = { "weather.forecast_home": st("clear-night", { temperature: 9, humidity: 67 }) };
+
+// ── each backend exactly as its integration names things ──────────────────────────────
+let own, other, sides;
+if (source === "cloud") {            // lukas-clarke/eight_sleep: "<first name>'s Eight Sleep Side"
+  own = "climate.alex_s_eight_sleep_side_climate"; other = "climate.sam_s_eight_sleep_side_climate";
+  for (const [p, on, side] of [["alex", true, "left"], ["sam", false, "right"]]) {
+    const s = `${p}_s_eight_sleep_side`;
+    Object.assign(states, {
+      [`climate.${s}_climate`]: climate(on, 31, 30.2),
+      [`sensor.${s}_bed_temperature`]: st(30.2, { unit_of_measurement: "°C" }),
+      [`sensor.${s}_bed_state`]: st(on ? 22 : 0, { "Target Heating Level": 22, "Heating Active": on, "Heating Time Remaining": 3600 }),
+      [`sensor.${s}_side`]: st(side), [`sensor.${s}_next_alarm`]: st(new Date(Date.now() + 8 * 3600e3).toISOString()),
+      [`sensor.${s}_heart_rate`]: st(57), [`sensor.${s}_hrv`]: st(64), [`sensor.${s}_breath_rate`]: st(14),
+      [`binary_sensor.${s}_bed_presence`]: st(on ? "on" : "off"),
+    });
+  }
+  Object.assign(states, { "sensor.alex_example_com_s_eight_sleep_has_water": st("True"), "sensor.alex_example_com_s_eight_sleep_is_priming": st("False") });
+} else if (source === "freesleep") { // Mrtenz/hass-free-sleep: "<model> <side name>"
+  own = "climate.pod_4_left_temperature"; other = "climate.pod_4_right_temperature";
+  for (const [s, on] of [["left", true], ["right", false]]) Object.assign(states, {
+    [`climate.pod_4_${s}_temperature`]: climate(on, 30, 29.4),
+    [`binary_sensor.pod_4_${s}_presence`]: st(on ? "on" : "off"),
+    [`sensor.pod_4_${s}_heart_rate`]: st(58), [`sensor.pod_4_${s}_hrv`]: st(70), [`sensor.pod_4_${s}_respiration_rate`]: st(13),
+  });
+  Object.assign(states, { "binary_sensor.pod_4_water_level": st("off", { device_class: "problem" }), "binary_sensor.pod_4_priming": st("off"),
+    "button.pod_4_prime": st("unknown"), "switch.pod_4_biometrics": st("on") });
+} else {                             // the Eight+ Pod gateway (MQTT discovery)
+  own = "climate.eight_sleep_pod_left"; other = "climate.eight_sleep_pod_right";
+  for (const [s, on] of [["left", true], ["right", false]]) Object.assign(states, {
+    [`climate.eight_sleep_pod_${s}`]: climate(on, 32, 31.1),
+    [`binary_sensor.eight_sleep_pod_${s}_presence`]: st(on ? "on" : "off"),
+    [`sensor.eight_sleep_pod_${s}_heart_rate`]: st(55), [`sensor.eight_sleep_pod_${s}_hrv`]: st(80),
+    [`sensor.eight_sleep_pod_${s}_breathing_rate`]: st(13), [`sensor.eight_sleep_pod_${s}_water_temp`]: st(29.5),
+  });
+  Object.assign(states, { "binary_sensor.eight_sleep_pod_water_low": st("off", { device_class: "problem" }),
+    "binary_sensor.eight_sleep_pod_priming": st("off"), "sensor.eight_sleep_pod_health": st("ok", { checks: [] }) });
+}
+
+// ── the helpers the add-on generates for each sleeper ─────────────────────────────────
+for (const p of [P, PP]) {
+  ["bedtime", "winddown", "early", "late", "deep", "prewake", "wake", "auto_off", "weekday_bedtime", "weekday_alarm",
+   "weekend_bedtime", "weekend_alarm", "boost_until"].forEach((k, i) =>
+    states[`input_datetime.${p}_${k}`] = dt(["21:30", "22:15", "23:00", "02:00", "03:30", "06:30", "07:00", "09:00", "22:30", "06:45", "23:30", "08:00", "00:00"][i]));
+  ["bedtime", "winddown", "early", "late", "deep", "prewake", "wake"].forEach((k, i) =>
+    states[`input_number.${p}_${k}_level`] = st([28, 27, 25, 26, 25, 30, 31][i], { min: 13, max: 44, step: 0.5 }));
+  Object.assign(states, {
+    [`input_boolean.${p}_smart_autopilot`]: st("on"), [`input_number.${p}_smart_bias`]: st(0, { min: -3, max: 3, step: 0.5 }),
+    [`sensor.${p}_suggested_temp`]: st(29.5, { env_base: 29, boost: 0.5, rate: -1, unit_of_measurement: "°C" }),
+    [`input_boolean.${p}_auto_off_enabled`]: st("on"), [`input_boolean.${p}_boost_active`]: st("off"),
+    [`input_boolean.${p}_away_mode`]: st("off"), [`input_boolean.${p}_off_when_up`]: st("on"), [`binary_sensor.${p}_in_bed`]: st("on"),
+  });
+}
+if (source !== "cloud") states["input_boolean.eight_plus_dual_mode"] = st("on");
+
+// ── mock hass ─────────────────────────────────────────────────────────────────────────
+const cards = [], calls = [];
+const hass = {
+  states, locale: { language: "en" }, language: "en", localize: () => "", formatEntityState: (e) => (e && e.state) || "",
+  user: { name: "Alex", is_admin: true }, themes: { darkMode: true },
+  callService(d, s, x) { calls.push([d, s, x]); },
+  callWS: () => Promise.resolve({}),
+  connection: { subscribeMessage: () => Promise.resolve(() => {}), subscribeEvents: () => Promise.resolve(() => {}) },
+};
+await customElements.whenDefined("eight-sleep-card");
+const addonCfg = {
+  source, entity: own, layout: "v2", font_url: false, schedule_prefix: P, partner_schedule_prefix: PP, coach_prefix: P,
+  partner_climate_entity: other, own_label: "Alex", partner_name: "Sam",
+  dual_mode_entity: source === "cloud" ? undefined : "input_boolean.eight_plus_dual_mode",
+  away_entity: `input_boolean.${P}_away_mode`, vacation_entity: `input_boolean.${P}_away_mode`,
+};
+const mk = (cfg, label) => {
+  const col = document.createElement("div"); col.className = "col";
+  col.innerHTML = `<p class="lbl">${label}</p>`;
+  try {
+    const el = document.createElement("eight-sleep-card");
+    el.setConfig({ type: "custom:eight-sleep-card", ...cfg });
+    el.hass = hass; cards.push(el); col.appendChild(el);
+  } catch (e) { errors.push(label + ": " + e.message); }
+  document.getElementById("row").appendChild(col);
+};
+mk({ source, entity: own, layout: "v2", font_url: false }, "Card only — source + entity");
+mk(addonCfg, "As the Eight+ add-on configures it");
+
+await new Promise((r) => setTimeout(r, 1500));
+for (const el of cards) el.hass = { ...hass };
+await new Promise((r) => setTimeout(r, 500));
+const missing = cards.map((el) => Object.entries(el._config || {})
+  .filter(([k, v]) => /_entity$/.test(k) && typeof v === "string" && v && !states[v]).map(([k, v]) => `${k} → ${v}`));
+window.__preview = { source, errors, calls, missing, rendered: cards.map((el) => !!(el.shadowRoot && el.shadowRoot.childElementCount)) };
+document.getElementById("log").innerHTML =
+  (errors.length ? `<span class="bad">${errors.length} error(s):\n${errors.join("\n")}</span>` : `<span class="ok">no errors</span>`) +
+  `  ·  rendered: ${window.__preview.rendered.join(", ")}`;
+</script>
+</body>
+</html>

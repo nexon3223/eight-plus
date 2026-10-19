@@ -1,0 +1,6 @@
+.dev/
+.dev.env
+__pycache__/
+*.pyc
+.DS_Store
+/tools/publish_rules.local.json

@@ -1,0 +1,19 @@
+[Unit]
+Description=Eight Sleep Pod watchdog (health checks + self-repair + HA status)
+After=network.target es-franken-proxy.service
+RequiresMountsFor=/persistent
+
+[Service]
+Type=simple
+User=root
+# reuse the biometrics tap's venv (cbor2 + paho); plain python3 still runs the
+# unit/link/clock checks + repairs if that venv ever goes missing
+ExecStart=/bin/sh -c 'P=/opt/es-biometrics-tap/venv/bin/python; [ -x "$P" ] || P=/usr/bin/python3; exec "$P" /opt/es-watchdog/es_watchdog.py'
+Restart=always
+RestartSec=5
+# the watchdog must outlive whatever it's repairing
+OOMScoreAdjust=-500
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

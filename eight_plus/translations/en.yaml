@@ -1,0 +1,19 @@
+configuration:
+  backfill_days:
+    name: History to import
+    description: >-
+      On first start, how many days of your Home Assistant history to turn into sleep reports
+      (limited by your recorder's purge_keep_days, 10 by default).
+  mqtt_host:
+    name: MQTT broker (optional)
+    description: >-
+      Only if your broker ISN'T the Mosquitto add-on. Leave empty to use the broker the
+      Supervisor knows about — or, with none, sleep reports are written straight into Home Assistant.
+  mqtt_port:
+    name: MQTT port
+  mqtt_user:
+    name: MQTT username
+  mqtt_password:
+    name: MQTT password
+network:
+  8098/tcp: Pod app for phones on your network (only answers once switched on in the Eight+ panel)

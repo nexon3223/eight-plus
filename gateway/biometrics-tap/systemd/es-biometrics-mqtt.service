@@ -1,0 +1,15 @@
+[Unit]
+Description=Eight Sleep biometrics -> Home Assistant MQTT discovery
+After=network.target es-biometrics.service
+Wants=es-biometrics.service
+RequiresMountsFor=/persistent
+
+[Service]
+Type=simple
+User=root
+ExecStart=/opt/es-biometrics-tap/venv/bin/python /opt/es-biometrics-tap/es_bio_mqtt.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=multi-user.target

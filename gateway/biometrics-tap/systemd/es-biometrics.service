@@ -1,0 +1,16 @@
+[Unit]
+Description=Eight Sleep biometrics (read-only tap: raw .RAW -> HR/HRV/breathing/presence -> SQLite)
+After=network.target local-fs.target
+RequiresMountsFor=/persistent
+
+[Service]
+Type=simple
+User=root
+WorkingDirectory=/opt/es-biometrics-tap/biometrics
+ExecStart=/opt/es-biometrics-tap/venv/bin/python /opt/es-biometrics-tap/biometrics/stream/stream.py
+Restart=always
+RestartSec=10
+Nice=5
+
+[Install]
+WantedBy=multi-user.target

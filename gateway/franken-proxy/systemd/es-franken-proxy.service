@@ -1,0 +1,16 @@
+[Unit]
+Description=Eight Sleep frankenfirmware<->dac proxy (local temp control)
+# must own /run/es-franken.sock before frankenfirmware dials it
+After=local-fs.target network.target dac.service
+Before=frank.service
+Wants=dac.service
+
+[Service]
+Type=simple
+User=root
+ExecStart=/opt/es-franken-proxy/venv/bin/python /opt/es-franken-proxy/franken_proxy.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
