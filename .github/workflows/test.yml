@@ -27,6 +27,8 @@ jobs:
         run: |
           test "$(cat eight_plus/app/VERSION)" = "$(grep '^version:' eight_plus/config.yaml | tr -d '" ' | cut -d: -f2)"
   hacs:
+    # HACS can only validate public repositories
+    if: ${{ !github.event.repository.private }}
     runs-on: ubuntu-latest
     steps:
       - uses: hacs/action@main
