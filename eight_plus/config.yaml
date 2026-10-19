@@ -4,7 +4,7 @@ slug: eight_plus
 description: >-
   Guided setup for the Eight+ card — Autopilot, schedules, sleep reports, a bedtime coach
   and a no-login Pod app — for Eight Sleep Pods on the cloud, free-sleep or the Eight+ gateway.
-url: https://github.com/YOUR_GITHUB_USER/eight-plus
+url: https://github.com/nexon3223/eight-plus
 arch:
   - aarch64
   - amd64

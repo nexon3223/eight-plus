@@ -37,9 +37,9 @@ You need Home Assistant OS or Supervised (for the add-on), and your Pod already 
 
 ### 1. Add the Eight+ add-on
 
-[![Open your Home Assistant instance and show the add add-on repository dialog.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2FYOUR_GITHUB_USER%2Feight-plus)
+[![Open your Home Assistant instance and show the add add-on repository dialog.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fnexon3223%2Feight-plus)
 
-Or: **Settings → Add-ons → Add-on store → ⋮ → Repositories**, add `https://github.com/YOUR_GITHUB_USER/eight-plus`, then install **Eight+** and start it.
+Or: **Settings → Add-ons → Add-on store → ⋮ → Repositories**, add `https://github.com/nexon3223/eight-plus`, then install **Eight+** and start it.
 
 ### 2. Open Eight+ from the sidebar and follow the setup
 
@@ -56,7 +56,7 @@ Eight+ backs up `configuration.yaml`, writes its package, has Home Assistant **c
 
 The add-on installs a bundled copy of the card so everything works immediately. To get card updates automatically, add this same repository to HACS as a **Dashboard** repository — Eight+ notices and switches to the HACS copy on its next update:
 
-**HACS → ⋮ → Custom repositories** → `https://github.com/YOUR_GITHUB_USER/eight-plus`, category **Dashboard** → download **Eight+ card**.
+**HACS → ⋮ → Custom repositories** → `https://github.com/nexon3223/eight-plus`, category **Dashboard** → download **Eight+ card**.
 
 <details>
 <summary>Just the card, no add-on (Home Assistant Container / Core, or hand-built setups)</summary>

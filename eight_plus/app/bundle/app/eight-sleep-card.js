@@ -1,6 +1,6 @@
 /*
  * Eight+ card — an Eight Sleep Pod app for Home Assistant.
- * https://github.com/YOUR_GITHUB_USER/eight-plus  ·  MIT licence
+ * https://github.com/nexon3223/eight-plus  ·  MIT licence
  *
  *   type: custom:eight-sleep-card
  *   source: cloud               # cloud | freesleep | gateway — fills in every entity for that backend
