@@ -594,12 +594,17 @@ class EightSleepCard extends HTMLElement {
     return this._config[key];
   }
   _clim() { return this._hass && this._hass.states[this._activeEntity()]; }
+  // °F Home Assistant: climate entities (and weather) speak the SYSTEM unit; the card is °C
+  // inside, so convert at the boundary — reads with _tC, writes with _tOut. No-op on °C.
+  _haF() { const u = this._hass && this._hass.config && this._hass.config.unit_system; return !!u && u.temperature === "°F"; }
+  _tC(v) { v = typeof v === "number" ? v : parseFloat(v); return Number.isFinite(v) && this._haF() ? (v - 32) * 5 / 9 : v; }
+  _tOut(c) { return this._haF() ? Math.round((c * 9 / 5 + 32) * 10) / 10 : c; }
   _useC() { return (this._config.units || "c") !== "level"; }
 
   _range() {
     const a = this._clim() ? this._clim().attributes : {};
-    const min = Number.isFinite(a.min_temp) ? a.min_temp : 12.8;
-    const max = Number.isFinite(a.max_temp) ? a.max_temp : 43.3;
+    const min = Number.isFinite(a.min_temp) ? this._tC(a.min_temp) : 12.8;
+    const max = Number.isFinite(a.max_temp) ? this._tC(a.max_temp) : 43.3;
     // manual-adjustment granularity: genuine 0.5° in Celsius mode. climate.set_temperature's own
     // target_temp_step is a whole degree — a fractional value sent through it just gets silently
     // rounded away — so half-degree targets route through _applyTemp's raw-level path instead
@@ -646,7 +651,7 @@ class EightSleepCard extends HTMLElement {
     if (this._overrideTemp !== null) return this._overrideTemp;
     const c = this._clim();
     const { min, max } = this._range();
-    return c && Number.isFinite(c.attributes.temperature) ? c.attributes.temperature : (min + max) / 2;
+    return c && Number.isFinite(c.attributes.temperature) ? this._tC(c.attributes.temperature) : (min + max) / 2;
   }
   // real bed surface temperature (sensor.*_bed_temperature), else climate reading
   _curTempEntity() {
@@ -659,7 +664,7 @@ class EightSleepCard extends HTMLElement {
     const e = this._hass.states[this._curTempEntity()];
     if (e) { const v = parseFloat(e.state); if (!isNaN(v)) return v; }
     const c = this._clim();
-    return c && Number.isFinite(c.attributes.current_temperature) ? c.attributes.current_temperature : this._tgtTemp();
+    return c && Number.isFinite(c.attributes.current_temperature) ? this._tC(c.attributes.current_temperature) : this._tgtTemp();
   }
 
   // live bed state (sensor.*_bed_state): level %, target level, heating-active, seconds remaining
@@ -899,12 +904,12 @@ class EightSleepCard extends HTMLElement {
     // only the cloud path (1° step) needs the raw-level eight_sleep.heat_set detour.
     if (whole || this._config.half_degree_via_heat_set === false) {
       const st = this._hass.states[id];
-      const cur = st && st.attributes && st.attributes.temperature;
+      const cur = this._tC(st && st.attributes && st.attributes.temperature);
       // "already there" has to be judged against the Pod's own grid (~0.28° half-step), not an
       // exact match — the read-back is quantised, so |cur - v| < 0.05 almost never holds and this
       // guard used to let every re-apply through as a fresh write.
       if (Number.isFinite(cur) && Math.abs(cur - v) < 0.28) return;   // already on this Pod step
-      this._hass.callService("climate", "set_temperature", { entity_id: id, temperature: v });
+      this._hass.callService("climate", "set_temperature", { entity_id: id, temperature: this._tOut(v) });
       return;
     }
     const raw = this._celsiusToRawLevel(v);
@@ -1414,7 +1419,7 @@ class EightSleepCard extends HTMLElement {
     if (this._pendingTemp !== null && this._pendingTemp !== undefined) {
       if (Math.abs(this._pendingTemp - Math.round(this._pendingTemp)) < 0.001) {
         const c = this._clim();
-        if (c && Math.abs(c.attributes.temperature - this._pendingTemp) < 0.6) {
+        if (c && Math.abs(this._tC(c.attributes.temperature) - this._pendingTemp) < 0.6) {
           this._pendingTemp = null;
           this._overrideTemp = null;
         }
@@ -6019,7 +6024,7 @@ class EightSleepCard extends HTMLElement {
   _smartModel() {
     const st = this._hass.states, cfg = this._config;
     const w = st[cfg.weather_entity];
-    const Tout = w && Number.isFinite(w.attributes.temperature) ? w.attributes.temperature : 15;
+    const Tout = w && Number.isFinite(w.attributes.temperature) ? this._tC(w.attributes.temperature) : 15;
     const cond = w ? w.state : "";
     const numOf = (e, f) => { const s = e && st[e]; const v = s ? parseFloat(s.state) : NaN; return isNaN(v) ? f : v; };
     const Troom = numOf(cfg.room_temp_entity, 20);
@@ -6127,7 +6132,7 @@ class EightSleepCard extends HTMLElement {
       return best.temp;
     }
     const w = this._hass.states[this._config.weather_entity];
-    return w && Number.isFinite(w.attributes.temperature) ? w.attributes.temperature : 15;
+    return w && Number.isFinite(w.attributes.temperature) ? this._tC(w.attributes.temperature) : 15;
   }
   // Autopilot v2 — predictive pre-conditioning. Estimates how fast the BED (not the room)
   // actually moves toward a new target, so the schedule can start ramping EARLY and arrive
@@ -7523,7 +7528,7 @@ class EightSleepCard extends HTMLElement {
     const grid = $("apGrid");
     if (grid) {
       const cl = this._clim();
-      const took = cl && cl.attributes ? parseFloat(cl.attributes.temperature) : NaN;
+      const took = cl && cl.attributes ? this._tC(cl.attributes.temperature) : NaN;
       // compare what will be DISPLAYED, not the raw floats: _fmtVal rounds, so 32.0 vs 31.9
       // both render "32°" and the chip would read "Asked 32° · Pod took 32°" — nonsense. If the
       // two format the same there is nothing to explain, so say nothing.

@@ -38,7 +38,7 @@ You need Home Assistant OS or Supervised (for the add-on), and your Pod already 
 
 [![Open your Home Assistant instance and show the add add-on repository dialog.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fnexon3223%2Feight-plus)
 
-Or: **Settings → Add-ons → Add-on store → ⋮ → Repositories**, add `https://github.com/nexon3223/eight-plus`, then install **Eight+** and start it.
+Or: **Settings → Apps → Install app → ⋮ → Repositories** (called *Add-ons → Add-on store* on Home Assistant before 2026.11), add `https://github.com/nexon3223/eight-plus`, then install **Eight+** and start it.
 
 ### 2. Open Eight+ from the sidebar and follow the setup
 

@@ -5,6 +5,17 @@
 - **Sleep Coach is deprecated.** Setup no longer offers it and never generates it, even from older
   saved answers — re-running setup removes its helpers, automations and the card's Coach tab.
 - New setup look: a minimal, dark, purple one-question-per-screen flow with the 8+ mark.
+- **Fix: °F Home Assistant systems.** Eight+ works in °C, but HA's climate entities speak the
+  system unit — so on a °F system every schedule/Autopilot write (e.g. "32") reached the Pod as
+  32 °F and was clamped to the coldest setting. Setup now records the unit, the generated
+  automations convert at every climate write and read (and the Autopilot model converts weather
+  and room temperatures), and the card does the same. °C installs are unchanged. Changing HA's
+  unit system later shows up as an update on the Eight+ panel.
+- free-sleep: the Connect step now only asks you to turn Biometrics on when it's actually off,
+  warns when free-sleep's own Away mode is on (it makes free-sleep drive both sides together), and
+  reminds you to switch off free-sleep's own schedules so they don't fight Eight+.
+- New end-to-end test (`tests/e2e/`): a stand-in free-sleep Pod + a real Home Assistant with the
+  real hass-free-sleep integration, through install, bedtime, buttons, presence and reports.
 
 ## 0.1.0
 

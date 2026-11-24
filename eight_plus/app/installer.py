@@ -189,8 +189,21 @@ class Installer:
         return {"found": bool(pick), "url": r.get("url"), "id": r.get("id"), "mode": mode,
                 "ours": [o["id"] for o in ours]}
 
+    # ─────────────────────────────────────────── units
+    def with_units(self, answers):
+        """The answers plus this Home Assistant's temperature unit ("C"/"F"). Eight+ is °C inside;
+        on a °F system the generator converts at the climate entities. Stamped at install, so a
+        later unit-system change needs "Change setup" (status flags it)."""
+        a = dict(answers)
+        try:
+            a["units"] = "F" if (self.ha.config().get("unit_system") or {}).get("temperature") == "°F" else "C"
+        except Exception:  # noqa: BLE001 — HA unreachable: keep what the answers already say
+            a.setdefault("units", "C")
+        return a
+
     # ─────────────────────────────────────────── preflight
     def preflight(self, answers):
+        answers = self.with_units(answers)
         plan = G.build(answers, version=self.version)
         st = self.state
         owned = set(st.get("entities") or [])
@@ -209,6 +222,7 @@ class Installer:
 
     # ─────────────────────────────────────────── install
     def start_install(self, answers):
+        answers = self.with_units(answers)
         with self.lock:
             if self.progress["running"]:
                 raise InstallError("an install is already running")
@@ -478,7 +492,7 @@ class Installer:
         if not st.get("installed"):
             return {"installed": False}
         try:
-            plan = G.build(st["answers"], version=self.version)
+            plan = G.build(self.with_units(st["answers"]), version=self.version)
         except Exception as e:  # noqa: BLE001
             return {"installed": True, "error": str(e)}
         ps = self.packages_setup()

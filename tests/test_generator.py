@@ -187,6 +187,33 @@ def main():
                     json.dump({"cards": plan["cards"], "summary": plan["summary"], "seeds": plan["seeds"]},
                               open(os.path.join(d, "plan.json"), "w"), indent=1, ensure_ascii=False)
                 print(f"ok  {label:28} {n:3} automations  {plan['summary']['helpers']:3} helpers")
+    # °F Home Assistant: every backend renders, parses and compiles, and every climate write/read
+    # crosses the °C⇄°F boundary (a bare °C number reaching a °F climate clamps the bed to 55 °F)
+    for b in ("gateway", "freesleep", "cloud"):
+        for i, f in enumerate(mixes):
+            a = {**answers(det[b], b, True, f), "units": "F"}
+            plan = G.build(a, version="test")
+            check_plan(plan, f"{b}/imperial/mix{i}")
+            for path, text in plan["files"].items():
+                if not path.startswith("packages/eight_plus/eight_plus_") or path.endswith("_bed.yaml"):
+                    continue
+                for line in text.splitlines():
+                    if re.search(r"\btemperature:\s", line) and "unit_of_measurement" not in line:
+                        assert "* 9 / 5 + 32" in line or re.search(r"temperature:\s*-?\d", line), \
+                            f"{b}: unconverted climate write: {line.strip()}"
+                assert not re.search(r"state_attr\('climate\.[^']+','(temperature|current_temperature|min_temp|max_temp)'\) \| float\(\d+\)\b(?! - 32)", text), \
+                    f"{b}: unconverted climate read"
+                assert "device_class: temperature" not in text, f"{b}: °C sensor would be auto-converted to °F"
+                assert "temperature: 59.0" in text or "temperature: 15" not in text
+            assert "{%- if true -%}" in plan["files"]["custom_templates/eight_plus.jinja"]
+        metric = G.build(answers(det[b], b, True, mixes[0]), version="test")
+        assert "{%- if false -%}" in metric["files"]["custom_templates/eight_plus.jinja"]
+        assert "* 9 / 5 + 32" not in "".join(metric["files"].values()), f"{b}: °C install got °F conversion"
+    # the conversion itself: 32 °C bedtime level → 89.6 °F on the wire, 80.6 °F read back → 27 °C
+    env = ha_env()
+    out = env.from_string("{{ ((32) | float * 9 / 5 + 32) | round(1) }}").render()
+    assert out == "89.6", out
+    print("ok  °F systems: every climate write/read converted, °C installs untouched")
     # Sleep Coach is deprecated: old answers asking for it must generate nothing coach-related
     plan = G.build(answers(det["gateway"], "gateway", True, mixes[0]), version="test")
     blob = json.dumps(plan["files"]) + json.dumps(plan["cards"])

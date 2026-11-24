@@ -201,7 +201,7 @@ class Handler(BaseHTTPRequestHandler):
             b = self._body()
             if path == "/api/preview":
                 pre = APP.inst.preflight(b["answers"])
-                plan = G.build(b["answers"], version=VERSION)
+                plan = G.build(APP.inst.with_units(b["answers"]), version=VERSION)
                 pre["files"] = plan["files"]
                 pre["cards"] = plan["cards"]
                 return self._json(pre)

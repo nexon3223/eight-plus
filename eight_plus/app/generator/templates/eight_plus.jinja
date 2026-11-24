@@ -34,6 +34,13 @@
 {%- set Troom   = states(troom) | float(22) if troom else 22 -%}
 {%- set Hroom   = states(hroom) | float(45) if hroom else 45 -%}
 {%- set roomRate = states(roomrate) | float(0) if roomrate else 0 -%}
+{#- a °F Home Assistant reports weather and room sensors in °F; the model works in °C
+    (the add-on writes true/false here at install from the system's unit) -#}
+{%- if __EP_IMPERIAL__ -%}
+{%- set Tout = (Tout - 32) * 5 / 9 if weather else Tout -%}
+{%- set Troom = (Troom - 32) * 5 / 9 if troom else Troom -%}
+{%- set roomRate = roomRate * 5 / 9 -%}
+{%- endif -%}
 {%- set m = now().month -%}
 {#- seasons flip below the equator (home zone latitude) -#}
 {%- set south = state_attr('zone.home', 'latitude') | float(1) < 0 -%}

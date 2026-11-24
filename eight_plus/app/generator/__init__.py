@@ -302,13 +302,41 @@ def _prime_action(backend, bed, primary_side):
     return f"{ind}- action: persistent_notification.create\n{ind}  data: {{message: \"Prime from the Eight Sleep app — this backend has no prime control.\"}}"
 
 
-def _bed_temp(backend, side):
+def _bed_temp(backend, side, imperial=False):
     if backend == "cloud" and side.get("bed_temp"):
         e = side["bed_temp"]
-        return f"states('{e}') | float(0)", f"has_value('{e}')"
+        v = f"states('{e}') | float(0)"
+        # a °C temperature sensor is shown in °F on a °F system — bring it back to °C
+        return (f"(({v}) - 32) * 5 / 9" if imperial else v), f"has_value('{e}')"
     c = side["climate"]
     return (f"state_attr('{c}','current_temperature') | float(0)",
             f"state_attr('{c}','current_temperature') is number")
+
+
+# ── °F Home Assistant systems ────────────────────────────────────────────────────────────
+# Eight+ thinks in °C end to end: every helper, the Autopilot model, the card. Home Assistant
+# speaks the SYSTEM unit at its climate entities (and weather/room sensors), so on a °F system
+# the generated YAML converts at that boundary — every value written to a climate goes °C → °F,
+# every climate temperature attribute read comes back °F → °C. Done as a pass over the rendered
+# YAML so no automation can be missed; on a °C system the output is byte-for-byte unchanged.
+_RD_CLIMATE = re.compile(
+    r"state_attr\('(climate\.[^']+)',\s*'(temperature|current_temperature|min_temp|max_temp)'\)\s*\|\s*float\((-?[\d.]+)\)")
+_RD_TRIGGER = re.compile(r"trigger\.(from|to)_state\.attributes\.temperature\s*\|\s*float\((-?[\d.]+)\)")
+_WR_TEMPLATE = re.compile(r'(\btemperature:\s*)"\{\{\s*(.*?)\s*\}\}"')
+_WR_NUMBER = re.compile(r"(\btemperature:\s*)(-?\d+(?:\.\d+)?)(?=\s*[}\n])")
+
+
+def _c2f(c):
+    return round(float(c) * 9 / 5 + 32, 1)
+
+
+def _to_imperial(text):
+    # reads first (the writes below wrap expressions that contain reads)
+    text = _RD_CLIMATE.sub(lambda m: f"((state_attr('{m.group(1)}','{m.group(2)}') | float({_c2f(m.group(3))}) - 32) * 5 / 9)", text)
+    text = _RD_TRIGGER.sub(lambda m: f"((trigger.{m.group(1)}_state.attributes.temperature | float({_c2f(m.group(2))}) - 32) * 5 / 9)", text)
+    text = _WR_TEMPLATE.sub(lambda m: f'{m.group(1)}"{{{{ (({m.group(2)}) | float * 9 / 5 + 32) | round(1) }}}}"', text)
+    text = _WR_NUMBER.sub(lambda m: f"{m.group(1)}{_c2f(m.group(2))}", text)
+    return text
 
 
 # ───────────────────────────────────────────────────────────────── build
@@ -350,6 +378,8 @@ def build(a, version="0.0.0"):
     dash_path = dash.get("url_path") or "eight-plus"
     asset = (a.get("asset_base") or "/local/eight_plus").rstrip("/")
     two_climates = sum(1 for s in sides.values() if s.get("climate")) >= 2
+    # the HA system temperature unit, stamped into the answers by the installer ("C" if absent)
+    imperial = a.get("units") == "F"
 
     sleepers = []
     for i, s in enumerate(a["sleepers"]):
@@ -369,7 +399,8 @@ def build(a, version="0.0.0"):
                 "PRIMING_TPL": prim_tpl, "ROOM_T": room.get("temp") or "",
                 "NOTIFY_PRIMARY": primary["notify"] or "notify.notify"}
     files = {"packages/eight_plus/eight_plus_bed.yaml": render(_tpl("bed.yaml.tmpl"), bed_flags, bed_vars),
-             "custom_templates/eight_plus.jinja": _tpl("eight_plus.jinja")}
+             "custom_templates/eight_plus.jinja": _tpl("eight_plus.jinja").replace(
+                 "__EP_IMPERIAL__", "true" if imperial else "false")}
 
     all_climates = [sd["climate"] for sd in sides.values() if sd.get("climate")]
     seeds, entities, cards, summary_rows = [], [], {}, []
@@ -388,7 +419,7 @@ def build(a, version="0.0.0"):
         any_on = ("[" + ", ".join(f"'{c}'" for c in all_climates) + "] | map('states') | "
                   "reject('in', ['off', 'unavailable', 'unknown']) | list | count > 0")
         table = helper_table(p, s["name"], sched, {**feat, "notify": bool(s["notify"])}, backend)
-        bt_tpl, bt_avail = _bed_temp(backend, side)
+        bt_tpl, bt_avail = _bed_temp(backend, side, imperial)
         score = f"sensor.{p}_sleep_score" if feat.get("pipeline", True) else ""
         scene = (a.get("winddown_scene") or "").strip()
         flags = {
@@ -396,7 +427,7 @@ def build(a, version="0.0.0"):
             "notify": bool(s["notify"]), "primary": s["primary"],
             "secondary": (not s["primary"]) and bool(partner_c),
             "gateway": backend == "gateway", "led": backend == "gateway" and bool((bed.get("shared") or {}).get("led")),
-            "winddown_scene": bool(scene),
+            "winddown_scene": bool(scene), "imperial": imperial,
         }
         v = {
             "VERSION": version, "NAME": s["name"], "SLUG": s["slug"], "P": p, "UP": s["slug"].upper(),
@@ -414,7 +445,8 @@ def build(a, version="0.0.0"):
             "WINDDOWN_SCENE": scene, "WINDDOWN_SCENE_ACTION": ("scene.turn_on" if scene.startswith("scene.")
                                                                else "script.turn_on"),
         }
-        files[f"packages/eight_plus/eight_plus_{s['slug']}.yaml"] = render(_tpl("sleeper.yaml.tmpl"), flags, v)
+        text = render(_tpl("sleeper.yaml.tmpl"), flags, v)
+        files[f"packages/eight_plus/eight_plus_{s['slug']}.yaml"] = _to_imperial(text) if imperial else text
         seeds += [sd for *_x, sd in table if sd]
         entities += [f"{d}.{o}" for d, o, _c, _s in table]
         entities += [f"sensor.{p}_bed_temperature", f"sensor.{p}_bed_temp_rate",

@@ -94,10 +94,25 @@ def detect_freesleep(registry):
                          ("_biometrics", "biometrics_toggle")):
             if uid.endswith(suf) and not uid.endswith("_prime_daily"):
                 shared[key] = e["entity_id"]
-    notes = []
-    if shared.get("biometrics_toggle"):
-        notes.append("Turn on free-sleep's Biometrics switch — presence and vitals depend on it.")
-    return _hit("freesleep", "free-sleep", sides, shared, notes, ssh=True)
+    return _hit("freesleep", "free-sleep", sides, shared, [], ssh=True)
+
+
+def _freesleep_notes(hit, states):
+    """Things only the live states can tell — said once, on the Connect step."""
+    if not hit or states is None:
+        return hit
+    st = lambda e: ((states.get(e) or {}).get("state")) if e else None  # noqa: E731
+    if st(hit["shared"].get("biometrics_toggle")) == "off":
+        hit["notes"].append("free-sleep's Biometrics switch is off — turn it on: bed presence, vitals and "
+                            "sleep reports all depend on it.")
+    away = [s for s, d in hit["sides"].items() if st(d.get("away_switch")) == "on"]
+    if away:
+        hit["notes"].append(f"free-sleep's own Away mode is on for the {' and '.join(away)} side. While it is, "
+                            "free-sleep sends every temperature change to BOTH sides — turn it off and use "
+                            "Eight+'s Away instead.")
+    hit["notes"].append("If you use free-sleep's own schedules, switch them off in the free-sleep app — "
+                        "Eight+ runs the bed now, and two schedules fight over it.")
+    return hit
 
 
 # ─────────────────────────────────────────────── Eight Sleep cloud (eight_sleep custom integration)
@@ -180,7 +195,7 @@ def _mark_online(hit, states):
 
 def detect_all(registry, states=None):
     return {"gateway": _mark_online(detect_gateway(registry), states),
-            "freesleep": _mark_online(detect_freesleep(registry), states),
+            "freesleep": _freesleep_notes(_mark_online(detect_freesleep(registry), states), states),
             "cloud": _mark_online(detect_cloud(registry, states), states)}
 
 

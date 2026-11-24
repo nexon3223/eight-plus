@@ -11,7 +11,11 @@ template:
       - name: "Eight Sleep ${NAME} Bed Temperature"
         unique_id: ${P}_bed_temperature
         unit_of_measurement: "°C"
+#if !imperial
+        # (no device_class on a °F system: HA would convert the state to °F under every
+        #  template that reads it — Eight+ works in °C end to end and converts at the climate)
         device_class: temperature
+#endif
         state_class: measurement
         availability: "{{ ${BED_TEMP_AVAIL} }}"
         state: "{{ ${BED_TEMP_TPL} }}"
