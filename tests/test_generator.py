@@ -187,6 +187,12 @@ def main():
                     json.dump({"cards": plan["cards"], "summary": plan["summary"], "seeds": plan["seeds"]},
                               open(os.path.join(d, "plan.json"), "w"), indent=1, ensure_ascii=False)
                 print(f"ok  {label:28} {n:3} automations  {plan['summary']['helpers']:3} helpers")
+    # Sleep Coach is deprecated: old answers asking for it must generate nothing coach-related
+    plan = G.build(answers(det["gateway"], "gateway", True, mixes[0]), version="test")
+    blob = json.dumps(plan["files"]) + json.dumps(plan["cards"])
+    assert "_coach" not in blob and "coach_status" not in blob, "deprecated Sleep Coach still generated"
+    assert all(c.get("coach") is False for c in plan["cards"].values()), "card still shows the Coach tab"
+    print("ok  Sleep Coach deprecated — nothing generated")
     # night spreading edge cases: wraps midnight, short nights, bedtime after midnight
     for bed, wake in (("22:30", "07:00"), ("00:45", "06:00"), ("21:00", "05:00"), ("23:59", "00:30")):
         ph = G.night_phases(bed, wake)

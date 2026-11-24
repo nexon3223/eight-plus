@@ -157,7 +157,7 @@ def test_install_update_uninstall():
     assert os.listdir(os.path.join(cfg, "eight_plus_backups"))
     assert ("homeassistant.restart", {}) in ha.services_called
     seeds = [s for s in ha.services_called if s[0].startswith(("input_", "counter"))]
-    assert len(seeds) > 100, len(seeds)
+    assert len(seeds) > 80, len(seeds)   # two sleepers' schedule + Autopilot seeds (no Coach since it was deprecated)
     assert ha.resources and ha.resources[0]["url"].startswith("/local/eight_plus/eight-sleep-card.js")
     assert "eight-plus" in ha.lovelace and len(ha.lovelace["eight-plus"]["views"]) == 2
     st = inst.state

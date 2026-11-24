@@ -223,7 +223,7 @@ def helper_table(p, name, sched, feat, backend):
                        ("humidity", "uses humidity"), ("reactive", "reactive"),
                        ("preconditioning", "pre-conditions")):
         b(f"ap_use_{key}", f"Autopilot {label}", "mdi:tune", True)
-    # ---- Sleep Coach
+    # ---- Sleep Coach (deprecated — build() always passes coach=False; kept for reference)
     if feat.get("coach"):
         b("coach", "Sleep Coach", "mdi:shield-check", True)
         b("pull_earlier", "Coach pulls bedtime earlier", "mdi:arrow-collapse-left", False)
@@ -341,6 +341,9 @@ def build(a, version="0.0.0"):
     bed = a["bed"]
     sides = bed["sides"]
     feat = dict(a.get("features") or {})
+    # Sleep Coach is deprecated: never generated, even from older saved answers, so re-running
+    # setup on an install that had it removes its helpers, automations and card tab.
+    feat["coach"] = False
     room = a.get("room") or {}
     sched = a["schedule"]
     dash = a.get("dashboard") or {}

@@ -1,6 +1,6 @@
 # Eight+ for Home Assistant
 
-**Your Eight Sleep Pod, run by your home.** A full Pod app inside Home Assistant — a photo-real reactive bed, a weather-aware Smart Autopilot, nightly sleep reports, a bedtime coach and a no-login app for every phone in the house — installed by a guided setup that takes about three minutes.
+**Your Eight Sleep Pod, run by your home.** A full Pod app inside Home Assistant — a photo-real reactive bed, a weather-aware Smart Autopilot, nightly sleep reports and a no-login app for every phone in the house — installed by a guided setup that takes about three minutes.
 
 Works with any of the three ways a Pod can talk to Home Assistant:
 
@@ -19,13 +19,12 @@ Works with any of the three ways a Pod can talk to Home Assistant:
 
 ## What you get
 
-- **The Eight+ card** — the whole app in one Lovelace card: Home (the bed glowing with its temperature, dual-zone control, boost, pre-cool), Schedule, Autopilot, Sleep, Coach and Settings tabs.
+- **The Eight+ card** — the whole app in one Lovelace card: Home (the bed glowing with its temperature, dual-zone control, boost, pre-cool), Schedule, Autopilot, Sleep and Settings tabs.
 - **Smart Autopilot** — seven overnight temperature phases that move with the outside forecast, your bedroom's temperature and humidity, the season and how fast the bed is actually heating. Every input can be switched off; every offset is a helper you can tune.
 - **Sleep reports** — a 0–100 score, time asleep, efficiency, resting heart rate, HRV, breathing, an estimated hypnogram and 30 nights of history, computed on your own Home Assistant box. No subscription. On first start it reads back through your recorder history, so last night's report usually appears within minutes.
-- **Sleep Coach** (optional) — picks tonight's bedtime from your sleep debt, nudges you (three messages, then silence), and runs a wake-up that escalates — heat, alerts, a cold snap, bed vibration on the gateway — until the bed says you're really up.
 - **Notifications** (optional) — bed ready, goodnight, good morning with your score, water low, with one-tap Warmer / Cooler / Boost buttons.
 - **The Pod app** (optional) — the card as a full-screen app for phones on your Wi-Fi, no Home Assistant login. Its proxy is scoped to the bed: it can't see or touch anything else in your house.
-- **Solo or two sleepers** — each person gets their own schedule, Autopilot, coach and reports; in Solo one schedule drives the whole bed.
+- **Solo or two sleepers** — each person gets their own schedule, Autopilot and reports; in Solo one schedule drives the whole bed.
 
 Everything Eight+ creates is ordinary Home Assistant config you can read: helpers, template sensors, scripts and automations in `packages/eight_plus/`, and one dashboard.
 
@@ -47,7 +46,7 @@ Or: **Settings → Add-ons → Add-on store → ⋮ → Repositories**, add `htt
 2. **People** — just you, or two of you; tap your half of the bed; pick a phone for notifications.
 3. **Routine** — weekday and weekend bedtime and wake. The seven Autopilot phases are laid out across your night.
 4. **Your room** — weather, bedroom temperature and humidity sensors (auto-suggested), and an optional wind-down scene.
-5. **Features** — Smart Autopilot, sleep reports, Sleep Coach, notifications, the Pod app.
+5. **Features** — Smart Autopilot, sleep reports, notifications, the Pod app.
 6. **Review** — every number and every file Eight+ will write, before anything happens. Then **Install**.
 
 Eight+ backs up `configuration.yaml`, writes its package, has Home Assistant **check the config** (and rolls straight back if it fails), restarts once, sets your schedule, installs the card and builds an **Eight+** dashboard.
@@ -78,7 +77,7 @@ entity: climate.alex_s_eight_sleep_side_climate
 | `freesleep` | `climate.pod_4_right_temperature` | presence, vitals, water, priming, prime, partner side — `pod_4_*` |
 | `gateway` | `climate.eight_sleep_pod_left` | presence, vitals, water temps, Pod health, partner side |
 
-Point a second card at the other side's climate entity for a two-sleeper bed. The Autopilot, schedule and coach features need their helpers and automations — the add-on generates them; without it, features whose entities don't exist simply hide. Every option is documented at the top of `eight-sleep-card.js`.
+Point a second card at the other side's climate entity for a two-sleeper bed. The Autopilot and schedule features need their helpers and automations — the add-on generates them; without it, features whose entities don't exist simply hide. Every option is documented at the top of `eight-sleep-card.js`.
 </details>
 
 ---
@@ -87,7 +86,7 @@ Point a second card at the other side's climate entity for a two-sleeper bed. Th
 
 The **Eight+** panel in the sidebar becomes a home screen: connection status, recent sleep scores, a **Run now** for the sleep reports, the Pod app switch, **View YAML**, **Change setup** (re-runs the wizard with your answers filled in) and **Uninstall**.
 
-- **Changing things** — use the card. Times, temperatures, Autopilot tuning and coach targets are all helpers; the card edits them and Eight+ never overwrites a value you've changed.
+- **Changing things** — use the card. Times, temperatures and Autopilot tuning are all helpers; the card edits them and Eight+ never overwrites a value you've changed.
 - **Updating** — when a new add-on version changes Eight+'s YAML, the panel says so and **Apply update** rewrites the package (your helper values, schedules and history stay).
 - **Customising an automation** — copy it out of `packages/eight_plus/` into your own automations and switch the original off. Files in `packages/eight_plus/` belong to Eight+ and are rewritten on update.
 - **Uninstalling** — removes the package, the Jinja model, the dashboard and the card resource Eight+ added. Backups in `eight_plus_backups/` and your sleep history stay.

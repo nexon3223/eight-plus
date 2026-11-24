@@ -15,11 +15,10 @@ const mins = (t) => { const [h, m] = (t || "0:0").split(":").map(Number); return
 const hhmm = (m) => { m = ((m % 1440) + 1440) % 1440; return `${String(Math.floor(m / 60)).padStart(2, "0")}:${String(m % 60).padStart(2, "0")}`; };
 
 const ICON = {
-  auto: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M14 14.8V4a2 2 0 1 0-4 0v10.8a4 4 0 1 0 4 0Z"/><path d="M12 9v6"/><path d="M18 5h3M18 9h2"/></svg>',
-  moon: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M20 14.5A8.5 8.5 0 1 1 9.5 4a7 7 0 0 0 10.5 10.5Z"/></svg>',
-  shield: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M12 3 5 6v6c0 4.5 3 7.5 7 9 4-1.5 7-4.5 7-9V6l-7-3Z"/><path d="m9 12 2 2 4-4"/></svg>',
-  phone: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><rect x="7" y="2.5" width="10" height="19" rx="2.5"/><path d="M11 18.5h2"/></svg>',
+  back: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 12H5"/><path d="m11 6-6 6 6 6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="m5 12.5 4.5 4.5L19 7.5"/></svg>',
 };
+const LOGO = (cls = "") => `<img class="logo ${cls}" src="icon.png" alt="Eight+">`;
 
 const REPO = "https://github.com/nexon3223/eight-plus";
 const STEPS = ["welcome", "backend", "people", "routine", "room", "features", "review"];
@@ -32,7 +31,7 @@ const S = {
     backend: null, bed: null,
     sleepers: [{ name: "", side: "left", notify: "" }, { name: "", side: "right", notify: "" }],
     room: { weather: "", temp: "", humidity: "" },
-    features: { autopilot: true, smart: true, coach: false, notifications: true, pipeline: true },
+    features: { autopilot: true, smart: true, notifications: true, pipeline: true },
     schedule: { weekday_bed: "22:30", weekday_wake: "07:00", weekend_bed: "23:30", weekend_wake: "08:30" },
     winddown_scene: "",
     pipeline: { source: "ha", host: "", port: 8822, user: "root", sudo: true },
@@ -53,6 +52,7 @@ function answers() {
     a.bed = bed;
   }
   if (!a.features.autopilot) a.features.smart = false;
+  delete a.features.coach;   // Sleep Coach is deprecated — never sent, even from older saved answers
   return a;
 }
 function sidesAvailable() { return Object.keys(S.det?.backends?.[S.a.backend]?.sides || {}); }
@@ -78,7 +78,7 @@ function problems(step) {
   const a = S.a, out = [];
   if (step === "backend") {
     if (!a.backend) out.push("Pick how Home Assistant talks to your Pod.");
-    else if (!S.det.backends[a.backend]) out.push("That connection isn't set up in Home Assistant yet — follow its setup link, then Rescan.");
+    else if (!S.det.backends[a.backend]) out.push("That connection isn't set up in Home Assistant yet — follow its setup guide, then Rescan.");
   }
   if (step === "people") {
     const list = S.couple ? a.sleepers : [a.sleepers[0]];
@@ -95,97 +95,89 @@ function problems(step) {
   return out;
 }
 
-// ───────────────────────────────────────────── views
+// ───────────────────────────────────────────── chrome
 function top() {
-  const st = S.status;
-  const ha = st?.ha_connected ? '<span class="pill ok"><span class="dot"></span>Home Assistant</span>' : '<span class="pill bad"><span class="dot"></span>Home Assistant offline</span>';
-  return `<div class="top"><div class="mark">8<span>+</span></div><div><div class="title">Eight+</div><div class="sub">Pod control for Home Assistant · v${esc(st?.version)}</div></div><div class="spacer"></div>${ha}</div>`;
-}
-function stepper() {
+  const off = S.status && !S.status.ha_connected ? '<span class="ha-off">● Home Assistant offline</span>' : "";
+  if (S.view !== "wizard") return `<div class="top">${LOGO("sm")}<div class="spacer"></div>${off}</div>`;
   const i = STEPS.indexOf(S.step);
-  return `<div class="steps">${STEPS.map((_, k) => `<i class="${k <= i ? "on" : ""}"></i>`).join("")}</div>`;
+  const lead = i > 0 ? `<button class="back" data-act="back" aria-label="Back">${ICON.back}</button>` : LOGO("sm");
+  const dashes = STEPS.slice(1).map((_, k) => `<i class="${k + 1 === i ? "on" : k + 1 < i ? "done" : ""}"></i>`).join("");
+  return `<div class="top">${lead}<div class="steps">${dashes}</div>${off}</div>`;
 }
-function nav(...args) { S._nav = args; return `<div id="navbox">${navInner(...args)}</div>`; }
+function head(eyebrow, title, lede) {
+  return `<div class="eyebrow">${eyebrow}</div><h1>${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ""}`;
+}
+function nav(...args) { S._nav = args; return `<div class="nav" id="navbox">${navInner(...args)}</div>`; }
 function renderNav() { const b = $("#navbox"); if (b && S._nav) b.innerHTML = navInner(...S._nav); }
-function navInner(backLabel = "Back", nextLabel = "Continue", nextAct = "next", extra = "") {
+function navInner(nextLabel = "Continue", nextAct = "next", alt = "") {
   // problems only show once someone has tried to move on — no scolding an untouched form
   const issues = S.tried === S.step ? problems(S.step) : [];
-  return `${issues.length ? `<div class="note warn" style="margin-top:18px">${issues.map(esc).join("<br>")}</div>` : ""}
-    <div class="nav">${S.step !== "welcome" ? `<button class="btn ghost" data-act="back">${backLabel}</button>` : ""}<div class="spacer"></div>${extra}
-    <button class="btn primary" data-act="${nextAct}" ${issues.length || S.busy ? "disabled" : ""}>${nextLabel}</button></div>`;
+  return `${issues.length ? `<div class="note warn issues">${issues.map(esc).join("<br>")}</div>` : ""}
+    ${alt ? `<div class="alt">${alt}</div>` : ""}
+    <button class="btn primary" data-act="${nextAct}" ${issues.length || S.busy ? "disabled" : ""}>${nextLabel}</button>`;
 }
 
+// ───────────────────────────────────────────── wizard steps
 function vWelcome() {
-  const d = S.det, i = d.integrations, pk = d.packages;
+  const d = S.det, pk = d.packages;
   const found = Object.values(d.backends).filter((b) => b && b.online !== false);
   const stale = Object.values(d.backends).filter((b) => b && b.online === false);
   const list = (xs) => xs.map((f) => `<b>${esc(f.label)}</b>`).join(xs.length > 2 ? ", " : " and ").replace(/, (?=[^,]*$)/, " and ");
-  const chk = (ok, label, detail, level = "warn") => `<li><span class="st ${ok ? "ok" : level}">${ok ? "✓" : "!"}</span><div><div>${label}</div><div class="d">${detail}</div></div></li>`;
-  return `${stepper()}<div class="fade">
-  <div class="eyebrow">Welcome</div>
-  <h1>Your Pod, run by your home.</h1>
-  <p class="lede">Eight+ sets up everything the Eight+ card needs — schedules, a weather-aware Autopilot, sleep reports and a bedtime coach — as ordinary Home Assistant helpers and automations you can see and tweak. Takes about three minutes.</p>
-  <div class="grid four">
-    <div class="card feature"><div class="ico">${ICON.auto}</div><h3>Smart Autopilot</h3><p>Warms or cools the bed through the night from the weather, your room and the season.</p></div>
-    <div class="card feature"><div class="ico">${ICON.moon}</div><h3>Sleep reports</h3><p>A score, stages, heart rate and HRV every morning — computed right here, no subscription.</p></div>
-    <div class="card feature"><div class="ico">${ICON.shield}</div><h3>Sleep Coach</h3><p>Nudges at bedtime and a wake-up that won't let you snooze through it. Optional.</p></div>
-    <div class="card feature"><div class="ico">${ICON.phone}</div><h3>Pod app</h3><p>A full-screen app for every phone in the house. Optional.</p></div>
-  </div>
-  <div class="card" style="margin-top:14px"><h2>Before we start</h2><ul class="checks" style="margin-top:8px">
-    ${chk(found.length > 0, found.length ? `Found your Pod via ${list(found)}` : "No working Pod connection in Home Assistant yet", (found.length ? "We'll confirm the details next." : "That's fine — the next step shows how to connect one.") + (stale.length ? ` (${stale.map((f) => esc(f.label)).join(", ")} ${stale.length > 1 ? "are" : "is"} registered but offline.)` : ""))}
-    ${chk(pk.mode.startsWith("dir_") || pk.mode === "missing", pk.mode.startsWith("dir_") ? `Packages are on (<span class="mono">${esc(pk.dir)}/</span>)` : pk.mode === "missing" ? "Packages will be switched on" : "Packages need a manual step", pk.mode === "missing" ? "Adds one line to configuration.yaml (backed up first)." : esc(pk.why || "Eight+ keeps all its YAML in one folder."), "bad")}
-    ${chk(d.mqtt_broker || d.integrations.mqtt, d.mqtt_broker ? "MQTT broker available" : d.integrations.mqtt ? "MQTT is set up" : "No MQTT broker", d.mqtt_broker ? "Sleep reports publish as proper devices." : d.integrations.mqtt ? "Using an external broker? Add its login in the add-on's Configuration tab so sleep reports publish as devices." : "Sleep reports still work — they're written straight into Home Assistant instead.")}
-    ${chk(d.card.found, d.card.found ? `Card installed (${esc(d.card.mode)})` : "Card not installed yet", d.card.found ? esc(d.card.url) : "We'll install the bundled copy. For automatic updates, add it through HACS later.")}
-  </ul></div>
-  ${nav("", "Get started")}</div>`;
+  // passing checks are one line; only the ones that need attention explain themselves
+  const chk = (ok, label, detail, level = "warn") => `<li><span class="st ${ok ? "ok" : level}">${ok ? "✓" : "!"}</span><div><div>${label}</div>${ok ? "" : `<div class="d">${detail}</div>`}</div></li>`;
+  return `<div class="screen fade"><div class="hero">${LOGO("xl")}
+    <h1>Your Pod, run by your home.</h1>
+    <p class="lede">Schedules, a weather-aware Autopilot and nightly sleep reports — set up as plain Home Assistant helpers. About three minutes.</p>
+    <div class="glass"><ul class="checks">
+      ${chk(found.length > 0, found.length ? `Found your Pod via ${list(found)}` : "No Pod connection yet", (found.length ? "We'll confirm the details next." : "The next step shows how to connect one.") + (stale.length ? ` (${stale.map((f) => esc(f.label)).join(", ")} ${stale.length > 1 ? "are" : "is"} registered but offline.)` : ""))}
+      ${chk(pk.mode.startsWith("dir_") || pk.mode === "missing", pk.mode.startsWith("dir_") ? `Packages are on` : pk.mode === "missing" ? "Packages will be switched on" : "Packages need a manual step", pk.mode.startsWith("dir_") ? `<span class="mono">${esc(pk.dir)}/</span>` : pk.mode === "missing" ? "One line in configuration.yaml, backed up first." : esc(pk.why || "Eight+ keeps all its YAML in one folder."), "bad")}
+      ${chk(d.mqtt_broker || d.integrations.mqtt, d.mqtt_broker ? "MQTT broker available" : d.integrations.mqtt ? "MQTT is set up" : "No MQTT broker", d.mqtt_broker ? "Sleep reports publish as proper devices." : d.integrations.mqtt ? "External broker? Add its login in the add-on's Configuration tab." : "Sleep reports are written straight into Home Assistant instead.")}
+      ${chk(d.card.found, d.card.found ? `Card installed (${esc(d.card.mode)})` : "Card not installed yet", d.card.found ? esc(d.card.url) : "We'll install the bundled copy. Use HACS later for updates.")}
+    </ul></div></div>
+    ${nav("Get started")}</div>`;
 }
 
 const BACKENDS = [
-  { id: "gateway", name: "Eight+ Pod gateway", tag: "Local · real-time", desc: "Your Pod runs stock firmware with the Eight+ gateway (franken proxy + biometrics tap) publishing over MQTT.",
-    pros: ["Instant control, no cloud", "Vitals, presence, water temps, Pod health", "Bed vibration for wake-ups"], setup: "Needs a rooted Pod 3 — see the gateway guide in the repo." , link: REPO + "/blob/main/docs/pod-gateway.md" },
-  { id: "freesleep", name: "free-sleep", tag: "Local · community firmware", desc: "The open free-sleep firmware on the Pod, with the hass-free-sleep integration.",
-    pros: ["No cloud, no subscription", "Presence + vitals", "Well-trodden community project"], setup: "Flash free-sleep, then install hass-free-sleep from HACS.", link: "https://github.com/throwaway31265/free-sleep" },
-  { id: "cloud", name: "Eight Sleep cloud", tag: "Cloud · easiest", desc: "Your Pod as it came, through Eight Sleep's servers and the eight_sleep custom integration.",
-    pros: ["Nothing to flash", "Works with the official app", "Needs your Eight Sleep login"], setup: "Install the eight_sleep custom integration from HACS, sign in, then Rescan.", link: "https://github.com/lukas-clarke/eight_sleep" },
+  { id: "gateway", name: "Eight+ Pod gateway", tag: "Local · real-time · vitals, presence, vibration", setup: "Needs a rooted Pod 3.", link: REPO + "/blob/main/docs/pod-gateway.md" },
+  { id: "freesleep", name: "free-sleep", tag: "Local · community firmware", setup: "Flash free-sleep, then add hass-free-sleep from HACS.", link: "https://github.com/throwaway31265/free-sleep" },
+  { id: "cloud", name: "Eight Sleep cloud", tag: "Cloud · nothing to flash", setup: "Add the eight_sleep integration from HACS and sign in.", link: "https://github.com/lukas-clarke/eight_sleep" },
 ];
 const FIELD_LABEL = { climate: "Temperature control", presence: "Bed presence", heart_rate: "Heart rate", hrv: "HRV", breath_rate: "Breathing rate", bed_temp: "Bed temperature", water_temp: "Water temperature" };
 
 function vBackend() {
   const d = S.det;
-  const cards = BACKENDS.map((b) => {
+  const rows = BACKENDS.map((b) => {
     const f = d.backends[b.id], sel = S.a.backend === b.id;
-    const badge = !f ? '<span class="pill">Not set up</span>' : f.online === false ? '<span class="pill warn"><span class="dot"></span>Offline</span>'
-      : `<span class="pill ok"><span class="dot"></span>Found · ${Object.keys(f.sides).length} side${Object.keys(f.sides).length > 1 ? "s" : ""}</span>`;
-    return `<button class="choice ${sel ? "sel" : ""} ${f ? "" : "dim"}" data-act="backend" data-id="${b.id}">
-      <div class="head"><span class="radio"></span><h2>${b.name}</h2></div>
-      <div class="tags">${badge}<span class="pill accent">${b.tag}</span></div><p>${b.desc}</p>
-      <ul>${b.pros.map((p) => `<li>•<span>${p}</span></li>`).join("")}</ul>
-      ${f ? "" : `<p class="small" style="margin-top:10px">${b.setup} <a href="${b.link}" target="_blank" rel="noopener">Setup guide ↗</a></p>`}</button>`;
+    const chip = !f ? '<span class="chip">Not set up</span>' : f.online === false ? '<span class="chip warn">Offline</span>'
+      : `<span class="chip ok">Found · ${Object.keys(f.sides).length} side${Object.keys(f.sides).length > 1 ? "s" : ""}</span>`;
+    return `<div class="opt ${sel ? "sel" : ""} ${f ? "" : "dim"}" role="button" tabindex="0" data-act="backend" data-id="${b.id}">
+      <span class="box">${ICON.check}</span>
+      <div class="t"><div class="n">${b.name}</div><div class="d">${f ? b.tag : `${b.setup} <a href="${b.link}" target="_blank" rel="noopener">Guide ↗</a>`}</div></div>${chip}</div>`;
   }).join("");
   let detail = "";
   const f = d.backends[S.a.backend];
   if (f) {
     const ov = S.overrides[S.a.backend] || {};
+    let missing = false;
     const sides = Object.entries(f.sides).map(([side, ents]) => {
-      const rows = Object.entries(FIELD_LABEL).map(([k, label]) => {
+      const trs = Object.entries(FIELD_LABEL).map(([k, label]) => {
         const v = (ov[side] || {})[k] || ents[k];
         if (!v && !["presence", "climate"].includes(k)) return "";
         if (v && !(ov[side] || {})[k]) return `<tr><td>${label}</td><td class="mono">${esc(v)}</td></tr>`;
+        if (!v) missing = true;
         const dom = k === "presence" ? "binary_sensor." : k === "climate" ? "climate." : "sensor.";
         const opts = d.all_entities.filter((e) => e.startsWith(dom));
-        return `<tr><td>${label}</td><td>${v ? "" : '<div class="miss small" style="margin-bottom:6px">Not found — pick one</div>'}
+        return `<tr><td>${label}</td><td>${v ? "" : '<div class="miss">Not found — pick one</div>'}
           <select data-ov="${side}.${k}"><option value="">—</option>${opts.map((e) => `<option ${e === v ? "selected" : ""}>${esc(e)}</option>`).join("")}</select></td></tr>`;
       }).join("");
-      return `<div><h3 style="text-transform:capitalize">${side} side</h3><table class="ents">${rows}</table></div>`;
+      return `<div class="label" style="text-transform:uppercase">${side} side</div><div class="glass"><table class="ents">${trs}</table></div>`;
     }).join("");
-    detail = `<div class="card fade" style="margin-top:14px"><h2>What we found</h2>
-      ${f.notes.map((n) => `<div class="note" style="margin-top:10px">${esc(n)}</div>`).join("")}
-      <div class="grid two" style="margin-top:6px">${sides}</div></div>`;
+    detail = `${f.notes.map((n) => `<div class="note gap">${esc(n)}</div>`).join("")}
+      <details ${missing ? "open" : ""}><summary>What we found</summary>${sides}</details>`;
   }
-  return `${stepper()}<div class="fade"><div class="eyebrow">Step 1 · Connect</div><h1>How does Home Assistant reach your Pod?</h1>
-    <p class="lede">We looked through your integrations. Pick the one you use — you can switch later by running setup again.</p>
-    <div class="grid three">${cards}</div>${detail}
-    ${nav("Back", "Continue", "next", '<button class="btn ghost" data-act="rescan">Rescan</button>')}</div>`;
+  return `<div class="screen fade">${head("Connecting your Pod", "How does Home Assistant reach your Pod?", "Pick the one you use. You can switch later.")}
+    <div class="opts">${rows}</div>${detail}
+    ${nav("Continue", "next", '<button class="btn link" data-act="rescan">Rescan</button>')}</div>`;
 }
 
 function vPeople() {
@@ -201,38 +193,30 @@ function vPeople() {
       ${i != null ? `<div class="who" data-live="name-${i}">${esc(s[i].name || (i ? "Partner" : "You"))}</div><div class="small muted">${side}</div>` : `Tap to sleep here<br><span class="small">${side}</span>`}</div>`;
   };
   const notifyOpts = (cur) => `<option value="">No phone notifications</option>${S.det.pickers.notify.map((n) => `<option ${n === cur ? "selected" : ""} value="${n}">${esc(n.replace("notify.mobile_app_", "").replace(/_/g, " "))}</option>`).join("")}`;
-  const person = (i) => `<div class="card"><div class="row" style="align-items:flex-start">
-      <label class="field"><span>${i ? "Their name" : S.couple ? "Your name" : "Your name"}</span><input type="text" maxlength="24" placeholder="${i ? "e.g. Sam" : "e.g. Alex"}" data-bind="sleepers.${i}.name" value="${esc(s[i].name)}"><small>Helpers are named <span class="mono" data-live="prefix-${i}">eight_sleep_${esc(slugify(s[i].name) || "…")}_*</span></small></label>
-      <label class="field"><span>Phone for bed notifications</span><select data-bind="sleepers.${i}.notify">${notifyOpts(s[i].notify)}</select><small>${S.det.pickers.notify.length ? "From the Home Assistant Companion app." : "Install the Companion app on a phone to get these."}</small></label>
-    </div></div>`;
-  return `${stepper()}<div class="fade"><div class="eyebrow">Step 2 · People</div><h1>Who sleeps in this bed?</h1>
-    <p class="lede">Each person gets their own schedule, Autopilot and sleep reports.${two ? " Solo means one schedule warms or cools the whole bed; with two of you, each side follows its own sleeper." : ""}</p>
-    ${two ? `<div class="seg" style="margin-bottom:18px"><button class="${S.couple ? "" : "on"}" data-act="couple" data-v="0">Just me</button><button class="${S.couple ? "on" : ""}" data-act="couple" data-v="1">Two of us</button></div>` : ""}
-    <div class="grid two" style="align-items:center"><div class="bed">${half("left")}${half("right")}</div>
-      <div class="stack">${person(0)}${S.couple ? person(1) : ""}</div></div>
+  const person = (i) => `<div>${S.couple ? `<div class="label">${i ? "Second sleeper" : "First sleeper"}</div>` : ""}
+      <label class="field"><span>${i ? "Their name" : "Your name"}</span><input type="text" maxlength="24" placeholder="${i ? "e.g. Sam" : "e.g. Alex"}" data-bind="sleepers.${i}.name" value="${esc(s[i].name)}"><small>Helpers: <span class="mono" data-live="prefix-${i}">eight_sleep_${esc(slugify(s[i].name) || "…")}_*</span></small></label>
+      <label class="field"><span>Phone for bed notifications</span><select data-bind="sleepers.${i}.notify">${notifyOpts(s[i].notify)}</select>${S.det.pickers.notify.length ? "" : "<small>Install the Companion app on a phone to get these.</small>"}</label></div>`;
+  return `<div class="screen fade">${head("Who sleeps here", "Who sleeps in this bed?", two ? "Each person gets their own schedule, Autopilot and reports." : "You get your own schedule, Autopilot and reports.")}
+    ${two ? `<div class="seg"><button class="${S.couple ? "" : "on"}" data-act="couple" data-v="0">Just me</button><button class="${S.couple ? "on" : ""}" data-act="couple" data-v="1">Two of us</button></div>` : ""}
+    <div class="bed">${half("left")}${half("right")}</div>
+    <div class="stack">${person(0)}${S.couple ? person(1) : ""}</div>
     ${nav()}</div>`;
 }
 
 function vRoutine() {
   const sc = S.a.schedule;
+  const shade = { bedtime: "#c9b6ff", winddown: "#b39cff", early: "#9479ff", late: "#7a5cf5", deep: "#5b3fd6", prewake: "#b48cff", wake: "#ff9fd0" };
   const bar = (bed, wake) => {
-    const n = nightPhases(bed, wake);
-    const colors = { bedtime: "#ff9c66", winddown: "#ffb88a", early: "#b9a6ff", late: "#8fb4ff", deep: "#5d8dff", prewake: "#ffc58f", wake: "#ff8a4c" };
-    const keys = PHASES.map((p) => p[0]);
-    const cells = keys.slice(0, -1).map((k, i) => { const w = n.rel[keys[i + 1]] - n.rel[k]; return `<div style="flex:${w};background:${colors[k]}" title="${k} ${hm12(n.at[k])}">${w > n.span * .1 ? PHASES[i][1] : ""}</div>`; }).join("");
-    return `<div class="night"><div class="bar">${cells}</div><div class="legend"><span>${hm12(bed)} bed on</span><span>${Math.floor(n.span / 60)}h ${n.span % 60}m</span><span>${hm12(wake)} wake</span></div></div>`;
+    const n = nightPhases(bed, wake), keys = PHASES.map((p) => p[0]);
+    const cells = keys.slice(0, -1).map((k, i) => `<div style="flex:${n.rel[keys[i + 1]] - n.rel[k]};background:${shade[k]}" title="${PHASES[i][1]} ${hm12(n.at[k])}"></div>`).join("");
+    return `<div class="night"><div class="bar">${cells}</div><div class="legend"><span>${hm12(bed)}</span><span>${Math.floor(n.span / 60)}h ${n.span % 60}m</span><span>${hm12(wake)}</span></div></div>`;
   };
-  return `${stepper()}<div class="fade"><div class="eyebrow">Step 3 · Routine</div><h1>When do you usually sleep?</h1>
-    <p class="lede">The bed turns on at bedtime, eases through seven temperature phases overnight and warms you up for your alarm. You can fine-tune every phase in the card afterwards.</p>
-    <div class="grid two">
-      <div class="card"><h2>Weeknights</h2><p class="muted small">Sunday – Thursday nights</p>
-        <div class="row" style="margin-top:12px"><label class="field"><span>Bedtime</span><input type="time" data-bind="schedule.weekday_bed" value="${sc.weekday_bed}"></label>
-        <label class="field"><span>Wake up</span><input type="time" data-bind="schedule.weekday_wake" value="${sc.weekday_wake}"></label></div>${bar(sc.weekday_bed, sc.weekday_wake)}</div>
-      <div class="card"><h2>Weekends</h2><p class="muted small">Friday + Saturday nights</p>
-        <div class="row" style="margin-top:12px"><label class="field"><span>Bedtime</span><input type="time" data-bind="schedule.weekend_bed" value="${sc.weekend_bed}"></label>
-        <label class="field"><span>Wake up</span><input type="time" data-bind="schedule.weekend_wake" value="${sc.weekend_wake}"></label></div>${bar(sc.weekend_bed, sc.weekend_wake)}</div>
-    </div>
-    <div class="note" style="margin-top:14px">Starting temperatures run from ${PHASES.map((p) => `${p[1].toLowerCase()} ${p[2]}°`).join(" → ")}. Autopilot moves them with the weather once it's on.</div>
+  const block = (label, bedKey, wakeKey) => `<div class="label">${label}</div><div class="times">
+      <label class="time"><span>Bedtime</span><input type="time" data-bind="schedule.${bedKey}" value="${sc[bedKey]}"></label>
+      <label class="time"><span>Wake up</span><input type="time" data-bind="schedule.${wakeKey}" value="${sc[wakeKey]}"></label></div>${bar(sc[bedKey], sc[wakeKey])}`;
+  return `<div class="screen fade">${head("Setting the rhythm", "When do you usually sleep?", "The bed eases through seven temperature phases and warms you for your alarm.")}
+    ${block("Weeknights · Sun – Thu", "weekday_bed", "weekday_wake")}
+    ${block("Weekends · Fri + Sat", "weekend_bed", "weekend_wake")}
     ${nav()}</div>`;
 }
 
@@ -240,14 +224,12 @@ function vRoom() {
   const p = S.det.pickers, r = S.a.room;
   const nm = (e) => { const n = p.names?.[e]; return n && n !== e ? `${n} · ${e}` : e; };
   const sel = (key, list, none, label, help) => `<label class="field"><span>${label}</span><select data-bind="room.${key}"><option value="">${none}</option>${list.map((e) => `<option value="${esc(e)}" ${e === r[key] ? "selected" : ""}>${esc(nm(e))}</option>`).join("")}</select><small>${help}</small></label>`;
-  return `${stepper()}<div class="fade"><div class="eyebrow">Step 4 · Your room</div><h1>What does Autopilot have to work with?</h1>
-    <p class="lede">Autopilot reads the weather and your bedroom to pick the right temperature. Everything here is optional — it just gets smarter with more.</p>
-    <div class="card"><div class="grid two">
-      ${sel("weather", p.weather, "No weather entity", "Weather", "Cold night outside → a warmer bed at bedtime.")}
-      ${sel("temp", p.temperature, "No room sensor", "Bedroom temperature", "A sensor in the bedroom itself works best.")}
-      ${sel("humidity", p.humidity, "No humidity sensor", "Bedroom humidity", "Dry air feels cooler; Autopilot compensates.")}
-      <label class="field"><span>Wind-down scene</span><select data-bind="winddown_scene"><option value="">Just the bed</option>${p.scenes.map((e) => `<option value="${esc(e)}" ${e === S.a.winddown_scene ? "selected" : ""}>${esc(nm(e))}</option>`).join("")}</select><small>Runs with the card's Wind down button — dim lights, close blinds…</small></label>
-    </div></div>${nav()}</div>`;
+  return `<div class="screen fade">${head("Reading the room", "What can Autopilot see?", "All optional — it just gets smarter with more.")}
+    ${sel("weather", p.weather, "No weather entity", "Weather", "Cold night outside → a warmer bed.")}
+    ${sel("temp", p.temperature, "No room sensor", "Bedroom temperature", "A sensor in the bedroom works best.")}
+    ${sel("humidity", p.humidity, "No humidity sensor", "Bedroom humidity", "Dry air feels cooler; Autopilot compensates.")}
+    <label class="field"><span>Wind-down scene</span><select data-bind="winddown_scene"><option value="">Just the bed</option>${p.scenes.map((e) => `<option value="${esc(e)}" ${e === S.a.winddown_scene ? "selected" : ""}>${esc(nm(e))}</option>`).join("")}</select><small>Runs with the card's Wind down button.</small></label>
+    ${nav()}</div>`;
 }
 
 function vFeatures() {
@@ -255,102 +237,100 @@ function vFeatures() {
   const tog = (key, title, text, opts = {}) => `<div class="toggle"><div class="txt"><h3>${title}</h3><p>${text}</p>${opts.after || ""}</div>
     <label class="switch"><input type="checkbox" data-feat="${key}" ${(opts.value ?? f[key]) ? "checked" : ""} ${opts.disabled ? "disabled" : ""}><span></span></label></div>`;
   const ssh = S.a.pipeline.source === "ssh";
-  const pipeAfter = f.pipeline && S.det.backends[S.a.backend]?.ssh_capable ? `<div class="seg small" style="margin-top:10px"><button class="${ssh ? "" : "on"}" data-act="psrc" data-v="ha">From Home Assistant</button><button class="${ssh ? "on" : ""}" data-act="psrc" data-v="ssh">Straight from the Pod (SSH)</button></div>
-    ${ssh ? `<div class="card" style="margin-top:10px;box-shadow:none"><div class="row"><label class="field"><span>Pod address</span><input type="text" data-bind="pipeline.host" placeholder="e.g. 192.168.1.x" value="${esc(S.a.pipeline.host)}"></label>
-      <label class="field" style="max-width:110px"><span>Port</span><input type="text" data-bind="pipeline.port" value="${esc(S.a.pipeline.port)}"></label><label class="field" style="max-width:140px"><span>User</span><input type="text" data-bind="pipeline.user" value="${esc(S.a.pipeline.user)}"></label></div>
-      <p class="small muted">Add this key to the Pod's <span class="mono">~/.ssh/authorized_keys</span>:</p><pre id="pubkey">loading…</pre>
+  const pipeAfter = f.pipeline && S.det.backends[S.a.backend]?.ssh_capable ? `<div class="seg small" style="margin:12px 0 0"><button class="${ssh ? "" : "on"}" data-act="psrc" data-v="ha">Home Assistant</button><button class="${ssh ? "on" : ""}" data-act="psrc" data-v="ssh">Pod over SSH</button></div>
+    ${ssh ? `<div style="margin-top:14px"><div class="row"><label class="field"><span>Pod address</span><input type="text" data-bind="pipeline.host" placeholder="192.168.1.x" value="${esc(S.a.pipeline.host)}"></label>
+      <label class="field" style="flex:.45"><span>Port</span><input type="text" data-bind="pipeline.port" value="${esc(S.a.pipeline.port)}"></label></div>
+      <label class="field" style="margin-top:12px"><span>User</span><input type="text" data-bind="pipeline.user" value="${esc(S.a.pipeline.user)}"></label>
+      <p class="small muted" style="margin:12px 0 6px">Add this key to the Pod's <span class="mono">~/.ssh/authorized_keys</span>:</p><pre id="pubkey">loading…</pre>
       <button class="btn ghost small" data-act="sshtest">Test connection</button> <span id="sshres" class="small"></span></div>` : ""}` : "";
-  return `${stepper()}<div class="fade"><div class="eyebrow">Step 5 · Features</div><h1>Pick what you want.</h1>
-    <p class="lede">Everything can be switched on or off later from the card or by running setup again.</p>
-    <div class="card">
-      ${tog("smart", "Smart Autopilot", "Adjusts the temperature all night from the weather, your room and the season. Off = the bed follows your fixed schedule.")}
-      ${tog("pipeline", "Sleep reports", "Score, stages, heart rate, HRV and breathing each morning, computed on your Home Assistant box. Uses what your Pod already reports — backfills from your recorder history, so you'll likely see last night straight away.", { after: pipeAfter })}
-      ${tog("coach", "Sleep Coach", "Picks a bedtime from your sleep debt, nudges you when it's time, and runs a wake-up that escalates (heat, alerts" + (S.a.backend === "gateway" ? ", bed vibration" : "") + ") until you're actually up." + (anyPhone ? "" : " <b>Works best with a phone picked on the People step.</b>"))}
-      ${tog("notifications", "Bed notifications", anyPhone ? "Bed ready, goodnight, good morning with your score, water low, and one-tap Warmer/Cooler buttons." : "Pick a phone on the People step to turn these on.", { disabled: !anyPhone, value: anyPhone && f.notifications })}
-      ${tog("standalone", "Pod app on your Wi-Fi", `A full-screen, no-login app for any phone at home (Add to Home Screen) on port ${S.status?.app?.port || 8098}. <b>Anyone on your network can control the bed with it</b> — but only the bed.`, { value: S.standalone })}
+  return `<div class="screen fade">${head("Choosing features", "Pick what you want.", "Change any of it later from the card.")}
+    <div class="glass">
+      ${tog("smart", "Smart Autopilot", "Adjusts all night from the weather, your room and the season.")}
+      ${tog("pipeline", "Sleep reports", "Score, stages, heart rate and HRV each morning — computed here.", { after: pipeAfter })}
+      ${tog("notifications", "Bed notifications", anyPhone ? "Bed ready, good morning with your score, water low." : "Pick a phone on the previous step to turn these on.", { disabled: !anyPhone, value: anyPhone && f.notifications })}
+      ${tog("standalone", "Pod app on your Wi-Fi", `A no-login app on port ${S.status?.app?.port || 8098}. Anyone on your network can control the bed with it.`, { value: S.standalone })}
     </div>${nav()}</div>`;
 }
 
 function vReview() {
   const p = S.preview;
-  if (!p) return `${stepper()}<div class="card"><p class="muted">Working out the plan…</p></div>`;
+  if (!p) return `<div class="screen fade">${head("Final check", "Working out the plan…")}<div class="glass"><ul class="checks"><li><span class="st run"></span><div class="muted">Building every file Eight+ will write</div></li></ul></div></div>`;
   const sm = p.plan_summary, a = answers();
-  const people = sm.sleepers.map((s) => `<tr><td>${esc(s.name)}</td><td>${esc(s.side)} side · <span class="mono">${esc(s.prefix)}_*</span> · ${s.helpers} helpers · ${s.automations} automations${s.notify ? ` · 🔔 ${esc(s.notify.replace("notify.mobile_app_", ""))}` : ""}</td></tr>`).join("");
+  const people = sm.sleepers.map((s) => `<tr><td>${esc(s.name)} · ${esc(s.side)}</td><td><span class="mono">${esc(s.prefix)}_*</span><br><span class="small muted">${s.helpers} helpers · ${s.automations} automations${s.notify ? ` · ${esc(s.notify.replace("notify.mobile_app_", ""))}` : ""}</span></td></tr>`).join("");
   const night = nightPhases(a.schedule.weekday_bed, a.schedule.weekday_wake).at;
   const files = Object.entries(p.files).map(([k, v]) => `<details><summary class="mono">${esc(k)}</summary><pre>${esc(v)}</pre></details>`).join("");
-  return `${stepper()}<div class="fade"><div class="eyebrow">Step 6 · Review</div><h1>Here's what Eight+ will set up.</h1>
-    <p class="lede">Nothing changes until you press Install. Your configuration is backed up first, and if Home Assistant doesn't like the result we roll straight back.</p>
-    <div class="grid four">
-      <div class="card stat"><div class="k">Helpers</div><div class="v">${sm.helpers}</div></div>
-      <div class="card stat"><div class="k">Automations</div><div class="v">${sm.automations}</div></div>
-      <div class="card stat"><div class="k">Sensors</div><div class="v">${sm.template_sensors}</div></div>
-      <div class="card stat"><div class="k">Dashboard</div><div class="v"><small>/</small>${esc(a.dashboard.url_path)}</div></div>
+  return `<div class="screen fade">${head("Final check", "Here's what Eight+ will set up.", "Nothing changes until you install. Your config is backed up, and we roll back if Home Assistant objects.")}
+    <div class="grid three">
+      <div class="glass stat"><div class="k">Helpers</div><div class="v">${sm.helpers}</div></div>
+      <div class="glass stat"><div class="k">Automations</div><div class="v">${sm.automations}</div></div>
+      <div class="glass stat"><div class="k">Sensors</div><div class="v">${sm.template_sensors}</div></div>
     </div>
-    <div class="card" style="margin-top:14px"><h2>${esc(sm.backend)}</h2><table class="ents">${people}</table>
-      <div class="note" style="margin-top:12px">Tonight on weeknights: bed on at <b>${hm12(night.bedtime)}</b>, deepest cool around <b>${hm12(night.deep)}</b>, warming from <b>${hm12(night.prewake)}</b>, wake at <b>${hm12(night.wake)}</b>${a.features.smart ? " — with Autopilot adjusting as it goes" : ""}. The bed switches itself off after you get up.</div>
-      ${p.restart_needed ? '<div class="note warn" style="margin-top:10px">Home Assistant will <b>restart once</b> (about a minute) to load the new package.</div>' : ""}
-      ${p.packages.mode === "missing" ? '<div class="note" style="margin-top:10px">Adds <span class="mono">packages: !include_dir_named packages</span> under <span class="mono">homeassistant:</span> in configuration.yaml.</div>' : ""}
-      ${p.warnings.map((w) => `<div class="note warn" style="margin-top:10px">${esc(w)}</div>`).join("")}
-      ${p.collisions.length ? `<div class="note bad" style="margin-top:10px"><div><b>${p.collisions.length} entities already exist</b> and weren't made by Eight+: ${p.collisions.slice(0, 6).map((c) => `<span class="mono">${esc(c)}</span>`).join(", ")}${p.collisions.length > 6 ? "…" : ""}. Go back and use different names.</div></div>` : ""}
-      <details><summary>See every file Eight+ will write</summary>${files}</details>
-    </div>
-    ${nav("Back", p.reinstall ? "Update install" : "Install", "install")}</div>`;
+    <div class="label">${esc(sm.backend)} · /${esc(a.dashboard.url_path)}</div>
+    <div class="glass"><table class="ents">${people}</table></div>
+    <div class="note gap">Weeknights: on at <b>${hm12(night.bedtime)}</b>, coolest around <b>${hm12(night.deep)}</b>, warming from <b>${hm12(night.prewake)}</b>, wake <b>${hm12(night.wake)}</b>${a.features.smart ? ", Autopilot adjusting as it goes" : ""}.</div>
+    ${p.restart_needed ? '<div class="note warn gap">Home Assistant will <b>restart once</b> (about a minute) to load the new package.</div>' : ""}
+    ${p.packages.mode === "missing" ? '<div class="note gap">Adds <span class="mono">packages: !include_dir_named packages</span> under <span class="mono">homeassistant:</span>.</div>' : ""}
+    ${p.warnings.map((w) => `<div class="note warn gap">${esc(w)}</div>`).join("")}
+    ${p.collisions.length ? `<div class="note bad gap"><div><b>${p.collisions.length} entities already exist</b> and weren't made by Eight+: ${p.collisions.slice(0, 6).map((c) => `<span class="mono">${esc(c)}</span>`).join(", ")}${p.collisions.length > 6 ? "…" : ""}. Go back and use different names.</div></div>` : ""}
+    <details><summary>Every file Eight+ will write</summary>${files}</details>
+    ${nav(p.reinstall ? "Update install" : "Install", "install")}</div>`;
 }
 
+// ───────────────────────────────────────────── install / done / home
 function vInstall() {
   const pr = S.progress || { steps: [] };
   const list = pr.steps.map((s) => `<li><span class="st ${s.status}">${s.status === "ok" ? "✓" : s.status === "warn" ? "!" : s.status === "fail" ? "✕" : ""}</span><div><div>${esc(s.label)}</div>${s.detail ? `<div class="d">${esc(s.detail)}</div>` : ""}</div></li>`).join("");
   const fail = pr.error;
-  return `<div class="fade"><div class="eyebrow">${fail ? "Something went wrong" : pr.done ? "Done" : "Installing"}</div>
-    <h1>${fail ? "Install stopped." : pr.done ? "All set." : "Setting up your Pod…"}</h1>
-    <p class="lede">${fail ? "Nothing half-finished was left behind — details below." : "Leave this page open. If Home Assistant restarts, it'll pick up where it left off."}</p>
-    <div class="card"><ul class="checks">${list || '<li><span class="st run"></span><div>Starting…</div></li>'}</ul></div>
-    ${fail ? `<div class="note bad" style="margin-top:14px;white-space:pre-wrap">${esc(fail)}</div><div class="nav"><button class="btn ghost" data-act="toreview">Back to review</button></div>` : ""}</div>`;
+  return `<div class="screen fade">${head(fail ? "Something went wrong" : pr.done ? "Done" : "Installing", fail ? "Install stopped." : pr.done ? "All set." : "Setting up your Pod…",
+      fail ? "Nothing half-finished was left behind." : "Leave this open. If Home Assistant restarts, we pick up where we left off.")}
+    <div class="glass"><ul class="checks">${list || '<li><span class="st run"></span><div>Starting…</div></li>'}</ul></div>
+    ${fail ? `<div class="note bad gap" style="white-space:pre-wrap">${esc(fail)}</div><div class="nav"><button class="btn primary" data-act="toreview">Back to review</button></div>` : ""}</div>`;
 }
 
 function vDone() {
   const st = S.status, ins = st.install || {};
   const dash = ins.dashboard || "eight-plus";
-  return `<div class="fade hero-done"><div class="tick">✓</div><h1>Your Pod is set up.</h1>
-    <p class="lede" style="margin:0 auto 20px">${(ins.sleepers || []).map((s) => esc(s.name)).join(" and ")}${(ins.sleepers || []).length > 1 ? " each have" : " has"} a dashboard view, a schedule and Autopilot. Sleep reports appear each morning.</p>
-    <button class="btn primary" data-act="opendash" data-path="${esc(dash)}">Open the Eight+ dashboard</button></div>
-    <div class="grid two" style="margin-top:22px">
-      <div class="card"><h2>Add it to your phone</h2><p class="muted small">In the Home Assistant app, open the dashboard and pin it — or turn on the Pod app below for a full-screen version.</p>
-        ${st.app.enabled ? `<p class="small">Pod app: <span class="url">${esc(appUrl())}</span></p><p class="muted small">Open it in Safari → Share → Add to Home Screen.</p>` : ""}</div>
-      <div class="card"><h2>Tonight</h2><p class="muted small">The bed turns on at bedtime by itself. Change anything in the card — Schedule for times, Autopilot for how it thinks, Settings for the rest.</p>
-        <p class="muted small">${ins.answers?.features?.pipeline === false ? "Sleep reports are off." : "Sleep reports are starting — Eight+ is reading back through your recent nights now, so the Sleep tab may fill in within a few minutes."}</p></div>
-    </div>
-    <div class="nav"><div class="spacer"></div><button class="btn ghost" data-act="home">Go to the Eight+ panel</button></div>`;
+  const names = (ins.sleepers || []).map((s) => esc(s.name));
+  return `<div class="screen fade"><div class="hero">${LOGO("xl")}<h1>You're all set.</h1>
+    <p class="lede">${names.join(" and ")}${names.length > 1 ? " each have" : " has"} a schedule and Autopilot. The bed turns on at bedtime by itself.</p>
+    <div class="glass"><ul class="checks">
+      <li><span class="st ok">✓</span><div><div>Dashboard</div><div class="d">/${esc(dash)} — pin it in the Home Assistant app.</div></div></li>
+      <li><span class="st ${ins.answers?.features?.pipeline === false ? "todo" : "ok"}">${ins.answers?.features?.pipeline === false ? "" : "✓"}</span><div><div>Sleep reports</div><div class="d">${ins.answers?.features?.pipeline === false ? "Off." : "Reading back through your recent nights now."}</div></div></li>
+      ${st.app.enabled ? `<li><span class="st ok">✓</span><div><div>Pod app</div><div class="d"><span class="url">${esc(appUrl())}</span> — Share → Add to Home Screen.</div></div></li>` : ""}
+    </ul></div></div>
+    <div class="nav"><div class="alt"><button class="btn link" data-act="home">Go to the Eight+ panel</button></div>
+      <button class="btn primary" data-act="opendash" data-path="${esc(dash)}">Open dashboard</button></div></div>`;
 }
 
 function vHome() {
   const st = S.status, ins = st.install || {}, sl = st.sleep || {}, dr = st.drift || {};
   const nights = Object.entries(sl.nights || {}).map(([name, n]) => {
     const vals = Object.entries(n);
-    return `<div><h3>${esc(name)}</h3>${vals.length ? `<div class="nights">${vals.map(([d, v]) => `<div style="height:${Math.max(6, v || 0)}%" title="${d}"><span>${v ?? "–"}</span></div>`).join("")}</div>` : '<p class="muted small">No nights yet — the first report lands the morning after a night in bed.</p>'}</div>`;
+    return `<div><h3>${esc(name)}</h3>${vals.length ? `<div class="nights">${vals.map(([d, v]) => `<div style="height:${Math.max(6, v || 0)}%" title="${d}"><span>${v ?? "–"}</span></div>`).join("")}</div>` : '<p class="muted small">No nights yet — the first report lands the morning after.</p>'}</div>`;
   }).join("");
   const upd = (dr.update || []).length, edited = (dr.edited || []).length;
-  return `<div class="fade"><div class="eyebrow">Installed · v${esc(ins.version)}</div><h1>Eight+ is running.</h1>
-    <p class="lede">${esc(({ gateway: "Eight+ Pod gateway", freesleep: "free-sleep", cloud: "Eight Sleep cloud" })[st.backend] || "")} · ${(ins.sleepers || []).map((s) => `${esc(s.name)} (${s.side})`).join(" · ")}</p>
-    ${upd ? `<div class="note warn flex" style="margin-bottom:14px"><div style="flex:1"><b>This version updates ${upd} Eight+ file${upd > 1 ? "s" : ""}.</b> Your helper values, schedules and history are kept.${edited ? ` ${edited} file(s) were edited by hand and will be overwritten — copy your changes out first.` : ""}</div><button class="btn primary small" data-act="update">Apply update</button></div>` : ""}
+  return `<div class="screen fade">${head(`Installed · v${esc(ins.version)}`, "Eight+ is running.",
+      `${esc(({ gateway: "Eight+ Pod gateway", freesleep: "free-sleep", cloud: "Eight Sleep cloud" })[st.backend] || "")} · ${(ins.sleepers || []).map((s) => `${esc(s.name)} (${s.side})`).join(" · ")}`)}
+    ${upd ? `<div class="note warn flex" style="margin-bottom:12px"><div style="flex:1"><b>This version updates ${upd} Eight+ file${upd > 1 ? "s" : ""}.</b> Your values and history are kept.${edited ? ` ${edited} hand-edited file(s) will be overwritten — copy your changes out first.` : ""}</div><button class="btn ghost small" data-act="update">Apply</button></div>` : ""}
     <div class="grid three">
-      <div class="card stat"><div class="k">Home Assistant</div><div class="v" style="font-size:18px">${st.ha_connected ? "Connected" : "Offline"}</div></div>
-      <div class="card stat"><div class="k">Sleep reports</div><div class="v" style="font-size:18px">${sl.enabled ? (sl.last_error ? "Error" : "Running") : "Off"}</div><div class="small muted">${sl.enabled ? esc(sl.source || "") + (sl.mqtt ? " → MQTT" : " → REST") : ""}</div></div>
-      <div class="card stat"><div class="k">Card</div><div class="v" style="font-size:18px">${esc((ins.card || {}).mode === "hacs" ? "HACS" : "Bundled")}</div><div class="small muted mono">${esc((ins.card || {}).url || "")}</div></div>
+      <div class="glass stat"><div class="k">Home Assistant</div><div class="v s">${st.ha_connected ? "Connected" : "Offline"}</div></div>
+      <div class="glass stat"><div class="k">Sleep reports</div><div class="v s">${sl.enabled ? (sl.last_error ? "Error" : "Running") : "Off"}</div><div class="small muted">${sl.enabled ? esc(sl.source || "") + (sl.mqtt ? " → MQTT" : " → REST") : ""}</div></div>
+      <div class="glass stat"><div class="k">Card</div><div class="v s">${esc((ins.card || {}).mode === "hacs" ? "HACS" : "Bundled")}</div></div>
     </div>
-    ${sl.last_error ? `<div class="note bad" style="margin-top:14px">${esc(sl.last_error)}</div>` : ""}
-    <div class="card" style="margin-top:14px"><div class="row"><h2 style="flex:1">Recent sleep scores</h2><button class="btn ghost small" data-act="runpipe">Run now</button></div><div class="grid two" style="margin-top:12px">${nights || '<p class="muted small">Sleep reports are off.</p>'}</div></div>
-    <div class="card" style="margin-top:14px"><div class="toggle" style="border:0;padding:0"><div class="txt"><h3>Pod app on your Wi-Fi</h3><p>${st.app.enabled ? `Running at <span class="url">${esc(appUrl())}</span>` : "A full-screen, no-login app for phones at home. Anyone on your network can control the bed with it — but only the bed."}</p></div>
+    ${sl.last_error ? `<div class="note bad gap">${esc(sl.last_error)}</div>` : ""}
+    <div class="label" style="display:flex;align-items:center">Recent sleep scores<span style="flex:1"></span><button class="btn link small" style="height:auto;padding:0;font-size:12px;letter-spacing:0;text-transform:none" data-act="runpipe">Run now</button></div>
+    <div class="glass"><div class="grid two">${nights || '<p class="muted small" style="margin:0">Sleep reports are off.</p>'}</div></div>
+    <div class="glass" style="margin-top:12px"><div class="toggle" style="padding:0"><div class="txt"><h3>Pod app on your Wi-Fi</h3><p>${st.app.enabled ? `Running at <span class="url">${esc(appUrl())}</span>` : "A no-login app for phones at home. Anyone on your network can control the bed."}</p></div>
       <label class="switch"><input type="checkbox" data-act="standalone" ${st.app.enabled ? "checked" : ""}><span></span></label></div></div>
-    <div class="nav"><button class="btn danger" data-act="uninstall">Uninstall</button><div class="spacer"></div>
-      <button class="btn ghost" data-act="files">View YAML</button><button class="btn ghost" data-act="rerun">Change setup</button><button class="btn primary" data-act="opendash" data-path="${esc(ins.dashboard || "eight-plus")}">Open dashboard</button></div>
-    <div id="filesbox"></div></div>`;
+    <div id="filesbox"></div>
+    <div class="nav"><div class="alt"><button class="btn link" data-act="files">View YAML</button><button class="btn link" data-act="rerun">Change setup</button><button class="btn link danger" data-act="uninstall">Uninstall</button></div>
+      <button class="btn primary" data-act="opendash" data-path="${esc(ins.dashboard || "eight-plus")}">Open dashboard</button></div></div>`;
 }
 
 // ───────────────────────────────────────────── render + events
 function render() {
   const root = $("#root");
-  if (S.err && !S.det) { root.innerHTML = `${top()}<div class="card"><h2>Can't load</h2><p class="muted">${esc(S.err)}</p><button class="btn primary" data-act="reload">Try again</button></div>`; return; }
+  if (S.err && !S.det) { root.innerHTML = `<div class="top">${LOGO("sm")}</div><div class="screen">${head("Can't load", "Eight+ can't reach Home Assistant.", esc(S.err))}<div class="nav"><button class="btn primary" data-act="reload">Try again</button></div></div>`; return; }
   if (!S.det || !S.status) return;
   let body;
   if (S.view === "install") body = vInstall();
@@ -358,6 +338,10 @@ function render() {
   else if (S.view === "home") body = vHome();
   else body = ({ welcome: vWelcome, backend: vBackend, people: vPeople, routine: vRoutine, room: vRoom, features: vFeatures, review: vReview })[S.step]();
   root.innerHTML = top() + (S.err ? `<div class="note bad" style="margin-bottom:14px">${esc(S.err)}</div>` : "") + body;
+  // the entrance animation plays once per screen, not on every re-render (picking an option, toggling)
+  const key = S.view + "/" + S.step + "/" + !!S.preview;
+  if (key === S._shown) root.querySelectorAll(".fade").forEach((n) => n.classList.remove("fade"));
+  S._shown = key;
   if (S.step === "features" && S.a.pipeline.source === "ssh" && $("#pubkey")) api("api/ssh/pubkey").then((j) => { $("#pubkey").textContent = j.pubkey; }).catch((e) => { $("#pubkey").textContent = e.message; });
 }
 
@@ -385,8 +369,12 @@ document.addEventListener("change", (e) => {
   if (t.dataset.feat) { if (t.dataset.feat === "standalone") S.standalone = t.checked; else S.a.features[t.dataset.feat] = t.checked; render(); }
   if (t.dataset.act === "standalone") api("api/standalone", { enabled: t.checked }).then(refresh).catch((er) => { S.err = er.message; render(); });
 });
+document.addEventListener("keydown", (e) => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.matches?.('.opt[role="button"]')) { e.preventDefault(); e.target.click(); }
+});
 
 document.addEventListener("click", async (e) => {
+  if (e.target.closest("a")) return;   // setup-guide links inside option rows open, they don't select
   const el = e.target.closest("[data-act]");
   if (!el || el.tagName === "INPUT") return;
   const act = el.dataset.act, i = STEPS.indexOf(S.step);
@@ -418,7 +406,7 @@ document.addEventListener("click", async (e) => {
     if (act === "rerun") { prefill(); S.view = "wizard"; goto("backend"); }
     if (act === "update") { await api("api/update", {}); S.view = "install"; S.progress = null; render(); poll(); }
     if (act === "runpipe") { await api("api/pipeline/run", {}); el.textContent = "Running…"; setTimeout(refresh, 4000); }
-    if (act === "files") { const j = await api("api/files"); $("#filesbox").innerHTML = `<div class="card" style="margin-top:14px">${Object.entries(j.files).map(([k, v]) => `<details><summary class="mono">${esc(k)}</summary><pre>${esc(v)}</pre></details>`).join("")}<details><summary>Card config</summary><pre>${esc(JSON.stringify(j.cards, null, 2))}</pre></details></div>`; }
+    if (act === "files") { const j = await api("api/files"); $("#filesbox").innerHTML = `<div class="glass" style="margin-top:12px">${Object.entries(j.files).map(([k, v]) => `<details><summary class="mono">${esc(k)}</summary><pre>${esc(v)}</pre></details>`).join("")}<details><summary>Card config</summary><pre>${esc(JSON.stringify(j.cards, null, 2))}</pre></details></div>`; }
     if (act === "uninstall") {
       if (!confirm("Remove Eight+? This deletes the Eight+ helpers, automations, sensors and dashboard. Your backups and sleep history are kept.")) return;
       await api("api/uninstall", {}); S.view = "install"; S.progress = null; render(); poll(true);
@@ -444,6 +432,7 @@ function prefill() {
   const keep = structuredClone(S.a);
   S.a = { ...keep, ...structuredClone(a), room: { ...keep.room, ...(a.room || {}) }, features: { ...keep.features, ...(a.features || {}) },
     schedule: { ...keep.schedule, ...(a.schedule || {}) }, pipeline: { ...keep.pipeline, ...(a.pipeline || {}) } };
+  delete S.a.features.coach;
   S.couple = (a.sleepers || []).length > 1;
   S.a.sleepers = [...(a.sleepers || []), ...keep.sleepers].slice(0, 2);
   if (!S.couple) S.a.sleepers[1] = { name: "", side: S.a.sleepers[0].side === "left" ? "right" : "left", notify: "" };
