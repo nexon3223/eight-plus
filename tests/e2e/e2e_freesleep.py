@@ -211,6 +211,12 @@ def main():
         ha = HA(endpoints(), log=lambda *x: None)
         ha.wait(30)
         llat = ha.call({"type": "auth/long_lived_access_token", "client_name": "eight-plus-e2e", "lifespan": 30})
+        # HA 2026.11+: a non-default http: block is "pending" and reverts (with a restart onto :8123)
+        # after 5 minutes unless confirmed — confirm it, as a user would after checking it works
+        try:
+            ha.call({"type": "http/config/promote"})
+        except Exception as e:  # noqa: BLE001 — older HA has no such step
+            say("http/config/promote:", e)
         check(ha.config()["unit_system"]["temperature"] == ("°C" if a.units == "metric" else "°F"),
               f"HA unit system is {a.units}")
 
