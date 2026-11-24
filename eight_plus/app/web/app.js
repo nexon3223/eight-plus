@@ -105,7 +105,7 @@ function top() {
   return `<div class="top">${lead}<div class="steps">${dashes}</div>${off}</div>`;
 }
 function head(eyebrow, title, lede) {
-  return `<div class="eyebrow">${eyebrow}</div><h1>${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ""}`;
+  return `${eyebrow ? `<div class="eyebrow">${eyebrow}</div>` : ""}<h1>${title}</h1>${lede ? `<p class="lede">${lede}</p>` : ""}`;
 }
 function nav(...args) { S._nav = args; return `<div class="nav" id="navbox">${navInner(...args)}</div>`; }
 function renderNav() { const b = $("#navbox"); if (b && S._nav) b.innerHTML = navInner(...S._nav); }
@@ -175,10 +175,110 @@ function vBackend() {
     detail = `${f.notes.map((n) => `<div class="note gap">${esc(n)}</div>`).join("")}
       <details ${missing ? "open" : ""}><summary>What we found</summary>${sides}</details>`;
   }
-  return `<div class="screen fade">${head("Connecting your Pod", "How does Home Assistant reach your Pod?", "Pick the one you use. You can switch later.")}
+  return `<div class="screen fade">${head("Connecting your Pod", "How does Home Assistant reach your Pod?")}
     <div class="opts">${rows}</div>${detail}
     ${nav("Continue", "next", '<button class="btn link" data-act="rescan">Rescan</button>')}</div>`;
 }
+
+/* ---------- the bed: the app's mattress photo with a dot field laid onto it ----------
+   Same geometry as the Pod card / native app (one outline + a homography so the grid recedes with
+   the bed while every dot stays round). Dots are dim until someone sleeps on that side, then a
+   sweep of white runs from the pillows to the foot and leaves them lit. */
+const BED = (() => {
+  const W = 420, H = 234, COLS = 71, ROWS = 34;
+  const Q = [[22.3, 12.8], [76.8, 12.1], [85.2, 53.8], [14.1, 53.7]];
+  const POLY = "22.1 13.3, 22.2 13.0, 22.3 12.8, 22.5 12.6, 22.7 12.5, 23.0 12.5, 23.4 12.4, 75.7 11.8, 76.1 11.8, 76.4 11.9, 76.6 12.0, 76.8 12.1, 76.9 12.3, 77.0 12.6, 85.3 53.3, 85.3 53.5, 85.2 53.8, 85.1 53.9, 84.8 54.0, 84.5 54.1, 84.0 54.1, 15.1 53.9, 14.7 53.9, 14.4 53.8, 14.1 53.7, 13.9 53.5, 13.9 53.3, 13.9 53.1"
+    .split(",").map((p) => p.trim().split(" ").map(Number));
+  const ss = (lo, hi, x) => { const t = Math.min(1, Math.max(0, (x - lo) / (hi - lo))); return t * t * (3 - 2 * t); };
+  function solve(a, b) {   // Gauss-Jordan, pivoted
+    const n = b.length, m = a.map((r, i) => [...r, b[i]]);
+    for (let c = 0; c < n; c++) {
+      let p = c; for (let r = c + 1; r < n; r++) if (Math.abs(m[r][c]) > Math.abs(m[p][c])) p = r;
+      [m[c], m[p]] = [m[p], m[c]];
+      const pv = m[c][c]; for (let j = c; j <= n; j++) m[c][j] /= pv;
+      for (let r = 0; r < n; r++) if (r !== c && m[r][c]) { const f = m[r][c]; for (let j = c; j <= n; j++) m[r][j] -= f * m[c][j]; }
+    }
+    return m.map((r) => r[n]);
+  }
+  const dots = (() => {
+    const dst = Q.map(([x, y]) => [x / 100 * W, y / 100 * H]), src = [[0, 0], [1, 0], [1, 1], [0, 1]], A = [], B = [];
+    src.forEach(([x, y], i) => { const [u, v] = dst[i]; A.push([x, y, 1, 0, 0, 0, -x * u, -y * u]); B.push(u); A.push([0, 0, 0, x, y, 1, -x * v, -y * v]); B.push(v); });
+    const h = solve(A, B), over = 0.04, k = 0.255;
+    const P = (s, t) => { const w = h[6] * s + h[7] * t + 1; return [(h[0] * s + h[1] * t + h[2]) / w, (h[3] * s + h[4] * t + h[5]) / w]; };
+    const sa = (i) => -over + (1 + 2 * over) * (i + 0.5) / COLS, ta = (j) => -over + (1 + 2 * over) * (j + 0.5) / ROWS;
+    const half = 2 / COLS, out = [];
+    for (let j = 0; j < ROWS; j++) for (let i = 0; i < COLS; i++) {
+      const s = sa(i), t = ta(j), p = P(s, t), p2 = P(sa(i + 1 < COLS ? i + 1 : i - 1), t);
+      const rs = (s - 0.5) / 0.5, rt = (t - 0.5) / 0.5, rr = Math.sqrt(rs * rs * 0.92 + rt * rt);
+      const o = (1 - 0.86 * ss(0.44, 1.12, rr)) * (0.52 + 0.48 * Math.min(1, Math.max(0, t)));
+      if (o < 0.045) continue;
+      out.push({ x: p[0], y: p[1], r: k * Math.abs(p2[0] - p[0]), o, t: Math.min(1, Math.max(0, t)), m: ss(0.5 - half, 0.5 + half, s) });
+    }
+    return out;
+  })();
+  // per-side light, kept across re-renders so a change plays as a sweep rather than a jump
+  const side = { l: { want: null, from: 0, to: 0, at: 0 }, r: { want: null, from: 0, to: 0, at: 0 } };
+  let raf = 0;
+  const reduce = matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const level = (sd, now) => {   // how far along the sweep we are, 0..1.5 (the front runs past the foot)
+    const age = (now - sd.at) / 1000;
+    return reduce ? 1.5 : age / 0.85 * 1.5;
+  };
+  function paint(cv, now) {
+    const box = cv.getBoundingClientRect(); if (!box.width) return;
+    const dpr = Math.min(2, window.devicePixelRatio || 1), pw = Math.round(box.width * dpr), ph = Math.round(box.width * H / W * dpr);
+    if (cv.width !== pw || cv.height !== ph) { cv.width = pw; cv.height = ph; cv.style.height = `${box.width * H / W}px`; }
+    const c = cv.getContext("2d"), sc = pw / W;
+    c.setTransform(sc, 0, 0, sc, 0, 0); c.clearRect(0, 0, W, H);
+    // the sheet plate: one dark plate over the whole mattress top
+    c.beginPath(); POLY.forEach(([x, y], i) => c[i ? "lineTo" : "moveTo"](x / 100 * W, y / 100 * H)); c.closePath();
+    c.fillStyle = "rgba(4,5,10,.70)"; c.fill(); c.save(); c.clip();
+    const f = { l: level(side.l, now), r: level(side.r, now) };
+    const amt = (sd, fr, t) => { const a = ss(0, 1, (fr - t) / 0.38); return sd.from + (sd.to - sd.from) * a; };
+    const breathe = reduce ? 0 : 0.5 + 0.5 * Math.sin(now / 1400);
+    for (const d of dots) {
+      const lv = amt(side.l, f.l, d.t) * (1 - d.m) + amt(side.r, f.r, d.t) * d.m;
+      const wave = reduce ? 0 : Math.sin(now / 900 - d.t * 6) * 0.5 + 0.5;
+      const glow = lv * (0.78 + 0.22 * wave * (0.6 + 0.4 * breathe));
+      const base = 0.18 * d.o, a = base + (d.o * 0.98 - base) * glow;
+      // unlit: cool grey; lit: white
+      const g = 112 + 143 * glow;
+      c.fillStyle = `rgba(${g},${g + 2},${g + 8},${Math.min(1, a)})`;
+      c.beginPath(); c.arc(d.x, d.y, d.r * (1 + 0.16 * glow), 0, 6.2832); c.fill();
+    }
+    c.restore();
+    const hero = cv.closest(".bedhero");
+    if (hero) { const l = hero.querySelector(".bedglow.l"), r = hero.querySelector(".bedglow.r"); const gl = (sd, fr) => (sd.from + (sd.to - sd.from) * Math.min(1, Math.max(0, fr / 1.2))); if (l) l.style.opacity = gl(side.l, f.l); if (r) r.style.opacity = gl(side.r, f.r); }
+  }
+  function run() {
+    cancelAnimationFrame(raf);
+    const cv = document.querySelector("canvas.bedfield");
+    if (!cv) return;
+    const tick = (now) => {
+      if (!cv.isConnected) return;
+      paint(cv, now);
+      if (reduce && Math.max(level(side.l, now), level(side.r, now)) >= 1.5) return;
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+  }
+  return {
+    set(cv) {
+      const now = performance.now();
+      for (const k of ["l", "r"]) {
+        const want = +cv.dataset[k], sd = side[k];
+        if (sd.want === null) { sd.from = sd.to = want; sd.at = now - 9999; }      // first paint: no sweep
+        else if (sd.to !== want) {
+          sd.from = sd.from + (sd.to - sd.from) * Math.min(1, Math.max(0, level(sd, now) / 1.2));   // start from what's showing
+          sd.to = want; sd.at = now;
+        }
+        sd.want = want;
+      }
+      run();
+    },
+  };
+})();
+function paintBed() { const cv = document.querySelector("canvas.bedfield"); if (cv) BED.set(cv); }
 
 function vPeople() {
   const avail = sidesAvailable();
@@ -187,18 +287,22 @@ function vPeople() {
   const s = S.a.sleepers;
   const who = (side) => { const i = s.findIndex((x, k) => x.side === side && (k === 0 || S.couple)); return i < 0 ? null : i; };
   const half = (side) => {
-    if (!avail.includes(side)) return `<div class="half" style="opacity:.35;cursor:default">No ${side} side</div>`;
+    if (!avail.includes(side)) return `<div class="bedhalf ${side[0]} off">No ${side} side</div>`;
     const i = who(side);
-    return `<div class="half ${i != null ? `taken ${i ? "b" : "a"}` : ""}" data-act="side" data-side="${side}"><div class="pillow"></div>
-      ${i != null ? `<div class="who" data-live="name-${i}">${esc(s[i].name || (i ? "Partner" : "You"))}</div><div class="small muted">${side}</div>` : `Tap to sleep here<br><span class="small">${side}</span>`}</div>`;
+    return `<div class="bedhalf ${side[0]} ${i != null ? "taken" : ""}" data-act="side" data-side="${side}" role="button" tabindex="0">
+      ${i != null ? `<div class="who" data-live="name-${i}">${esc(s[i].name || (i ? "Partner" : "You"))}</div><div class="side">${side}</div>` : `<div class="side">Tap to sleep here</div><div class="side sub">${side}</div>`}</div>`;
   };
+  const lit = (side) => (avail.includes(side) && who(side) != null ? 1 : 0);
+  const bedHero = `<div class="bedhero"><div class="bedglow l"></div><div class="bedglow r"></div>
+    <div class="bedphoto"><img src="es-bed.png" alt="" draggable="false"><canvas class="bedfield" data-l="${lit("left")}" data-r="${lit("right")}"></canvas>
+    <img class="bedpillows" src="es-pillows.png" alt="" draggable="false">${half("left")}${half("right")}</div></div>`;
   const notifyOpts = (cur) => `<option value="">No phone notifications</option>${S.det.pickers.notify.map((n) => `<option ${n === cur ? "selected" : ""} value="${n}">${esc(n.replace("notify.mobile_app_", "").replace(/_/g, " "))}</option>`).join("")}`;
   const person = (i) => `<div>${S.couple ? `<div class="label">${i ? "Second sleeper" : "First sleeper"}</div>` : ""}
       <label class="field"><span>${i ? "Their name" : "Your name"}</span><input type="text" maxlength="24" placeholder="${i ? "e.g. Sam" : "e.g. Alex"}" data-bind="sleepers.${i}.name" value="${esc(s[i].name)}"><small>Helpers: <span class="mono" data-live="prefix-${i}">eight_sleep_${esc(slugify(s[i].name) || "…")}_*</span></small></label>
       <label class="field"><span>Phone for bed notifications</span><select data-bind="sleepers.${i}.notify">${notifyOpts(s[i].notify)}</select>${S.det.pickers.notify.length ? "" : "<small>Install the Companion app on a phone to get these.</small>"}</label></div>`;
-  return `<div class="screen fade">${head("Who sleeps here", "Who sleeps in this bed?", two ? "Each person gets their own schedule, Autopilot and reports." : "You get your own schedule, Autopilot and reports.")}
+  return `<div class="screen fade">${head("", "Who sleeps in this bed?", two ? "Each person gets their own schedule, Autopilot and reports." : "You get your own schedule, Autopilot and reports.")}
     ${two ? `<div class="seg"><button class="${S.couple ? "" : "on"}" data-act="couple" data-v="0">Just me</button><button class="${S.couple ? "on" : ""}" data-act="couple" data-v="1">Two of us</button></div>` : ""}
-    <div class="bed">${half("left")}${half("right")}</div>
+    ${bedHero}
     <div class="stack">${person(0)}${S.couple ? person(1) : ""}</div>
     ${nav()}</div>`;
 }
@@ -214,7 +318,7 @@ function vRoutine() {
   const block = (label, bedKey, wakeKey) => `<div class="label">${label}</div><div class="times">
       <label class="time"><span>Bedtime</span><input type="time" data-bind="schedule.${bedKey}" value="${sc[bedKey]}"></label>
       <label class="time"><span>Wake up</span><input type="time" data-bind="schedule.${wakeKey}" value="${sc[wakeKey]}"></label></div>${bar(sc[bedKey], sc[wakeKey])}`;
-  return `<div class="screen fade">${head("Setting the rhythm", "When do you usually sleep?", "The bed eases through seven temperature phases and warms you for your alarm.")}
+  return `<div class="screen fade">${head("", "When do you usually sleep?", "The bed eases through seven temperature phases and warms you for your alarm.")}
     ${block("Weeknights · Sun – Thu", "weekday_bed", "weekday_wake")}
     ${block("Weekends · Fri + Sat", "weekend_bed", "weekend_wake")}
     ${nav()}</div>`;
@@ -224,7 +328,7 @@ function vRoom() {
   const p = S.det.pickers, r = S.a.room;
   const nm = (e) => { const n = p.names?.[e]; return n && n !== e ? `${n} · ${e}` : e; };
   const sel = (key, list, none, label, help) => `<label class="field"><span>${label}</span><select data-bind="room.${key}"><option value="">${none}</option>${list.map((e) => `<option value="${esc(e)}" ${e === r[key] ? "selected" : ""}>${esc(nm(e))}</option>`).join("")}</select><small>${help}</small></label>`;
-  return `<div class="screen fade">${head("Reading the room", "What can Autopilot see?", "All optional — it just gets smarter with more.")}
+  return `<div class="screen fade">${head("", "Autopilot Sensors")}
     ${sel("weather", p.weather, "No weather entity", "Weather", "Cold night outside → a warmer bed.")}
     ${sel("temp", p.temperature, "No room sensor", "Bedroom temperature", "A sensor in the bedroom works best.")}
     ${sel("humidity", p.humidity, "No humidity sensor", "Bedroom humidity", "Dry air feels cooler; Autopilot compensates.")}
@@ -243,7 +347,7 @@ function vFeatures() {
       <label class="field" style="margin-top:12px"><span>User</span><input type="text" data-bind="pipeline.user" value="${esc(S.a.pipeline.user)}"></label>
       <p class="small muted" style="margin:12px 0 6px">Add this key to the Pod's <span class="mono">~/.ssh/authorized_keys</span>:</p><pre id="pubkey">loading…</pre>
       <button class="btn ghost small" data-act="sshtest">Test connection</button> <span id="sshres" class="small"></span></div>` : ""}` : "";
-  return `<div class="screen fade">${head("Choosing features", "Pick what you want.", "Change any of it later from the card.")}
+  return `<div class="screen fade">${head("", "Pick what you want.", "Change any of it later from the card.")}
     <div class="glass">
       ${tog("smart", "Smart Autopilot", "Adjusts all night from the weather, your room and the season.")}
       ${tog("pipeline", "Sleep reports", "Score, stages, heart rate and HRV each morning — computed here.", { after: pipeAfter })}
@@ -254,18 +358,17 @@ function vFeatures() {
 
 function vReview() {
   const p = S.preview;
-  if (!p) return `<div class="screen fade">${head("Final check", "Working out the plan…")}<div class="glass"><ul class="checks"><li><span class="st run"></span><div class="muted">Building every file Eight+ will write</div></li></ul></div></div>`;
+  if (!p) return `<div class="screen fade">${head("", "Working out the plan…")}<div class="glass"><ul class="checks"><li><span class="st run"></span><div class="muted">Building every file Eight+ will write</div></li></ul></div></div>`;
   const sm = p.plan_summary, a = answers();
   const people = sm.sleepers.map((s) => `<tr><td>${esc(s.name)} · ${esc(s.side)}</td><td><span class="mono">${esc(s.prefix)}_*</span><br><span class="small muted">${s.helpers} helpers · ${s.automations} automations${s.notify ? ` · ${esc(s.notify.replace("notify.mobile_app_", ""))}` : ""}</span></td></tr>`).join("");
   const night = nightPhases(a.schedule.weekday_bed, a.schedule.weekday_wake).at;
   const files = Object.entries(p.files).map(([k, v]) => `<details><summary class="mono">${esc(k)}</summary><pre>${esc(v)}</pre></details>`).join("");
-  return `<div class="screen fade">${head("Final check", "Here's what Eight+ will set up.", "Nothing changes until you install. Your config is backed up, and we roll back if Home Assistant objects.")}
+  return `<div class="screen fade">${head("", "Here's what Eight+ will set up.", "Nothing changes until you install. Your config is backed up, and we roll back if Home Assistant objects.")}
     <div class="grid three">
       <div class="glass stat"><div class="k">Helpers</div><div class="v">${sm.helpers}</div></div>
       <div class="glass stat"><div class="k">Automations</div><div class="v">${sm.automations}</div></div>
       <div class="glass stat"><div class="k">Sensors</div><div class="v">${sm.template_sensors}</div></div>
     </div>
-    <div class="label">${esc(sm.backend)} · /${esc(a.dashboard.url_path)}</div>
     <div class="glass"><table class="ents">${people}</table></div>
     <div class="note gap">Weeknights: on at <b>${hm12(night.bedtime)}</b>, coolest around <b>${hm12(night.deep)}</b>, warming from <b>${hm12(night.prewake)}</b>, wake <b>${hm12(night.wake)}</b>${a.features.smart ? ", Autopilot adjusting as it goes" : ""}.</div>
     ${p.restart_needed ? '<div class="note warn gap">Home Assistant will <b>restart once</b> (about a minute) to load the new package.</div>' : ""}
@@ -342,6 +445,7 @@ function render() {
   const key = S.view + "/" + S.step + "/" + !!S.preview;
   if (key === S._shown) root.querySelectorAll(".fade").forEach((n) => n.classList.remove("fade"));
   S._shown = key;
+  paintBed();
   if (S.step === "features" && S.a.pipeline.source === "ssh" && $("#pubkey")) api("api/ssh/pubkey").then((j) => { $("#pubkey").textContent = j.pubkey; }).catch((e) => { $("#pubkey").textContent = e.message; });
 }
 
