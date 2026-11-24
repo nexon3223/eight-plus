@@ -7,4 +7,5 @@ RUN apk add --no-cache python3 openssh-client
 
 COPY app /app
 ENV CONFIG_DIR=/homeassistant DATA_DIR=/data PYTHONUNBUFFERED=1
-CMD ["python3", "/app/main.py"]
+# with-contenv: hand the process the container environment (SUPERVISOR_TOKEN etc.) under s6-overlay
+CMD ["/usr/bin/with-contenv", "python3", "/app/main.py"]

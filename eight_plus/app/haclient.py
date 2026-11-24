@@ -20,8 +20,22 @@ import urllib.request
 GUID = "258EAFA5-E914-47DA-95CA-C5AB0DC85B11"
 
 
+def _supervisor_token():
+    """The add-on's Supervisor token. Add-on images run under s6-overlay, which can start the
+    main process with a stripped environment — then the token only exists in
+    /run/s6/container_environment, so fall back to reading it from there."""
+    tok = os.environ.get("SUPERVISOR_TOKEN")
+    if tok:
+        return tok
+    try:
+        with open("/run/s6/container_environment/SUPERVISOR_TOKEN") as f:
+            return f.read().strip() or None
+    except OSError:
+        return None
+
+
 def endpoints():
-    sup = os.environ.get("SUPERVISOR_TOKEN")
+    sup = _supervisor_token()
     if sup:
         return {"rest": "http://supervisor/core/api", "ws": "ws://supervisor/core/websocket",
                 "token": sup, "supervisor": "http://supervisor", "in_addon": True}

@@ -1,5 +1,5 @@
 name: Eight+
-version: "0.1.0"
+version: "0.1.1"
 slug: eight_plus
 description: >-
   Guided setup for the Eight+ card — Autopilot, schedules, sleep reports
@@ -10,6 +10,7 @@ arch:
   - amd64
 init: false
 ingress: true
+ingress_panel: true
 panel_icon: mdi:bed-king-outline
 panel_title: Eight+
 homeassistant_api: true

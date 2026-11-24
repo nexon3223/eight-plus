@@ -1,7 +1,12 @@
 # Changelog
 
-## Unreleased
+## 0.1.1
 
+- **Fix: the add-on couldn't talk to Home Assistant when installed from the store** ("Invalid access
+  token"). The add-on image's init system started Eight+ without the Supervisor token in its
+  environment; it now runs under `with-contenv` and also reads the token from the container
+  environment directly.
+- The **Eight+** entry now shows in the sidebar as soon as the add-on is installed (it was off by default).
 - **Sleep Coach is deprecated.** Setup no longer offers it and never generates it, even from older
   saved answers — re-running setup removes its helpers, automations and the card's Coach tab.
 - New setup look: a minimal, dark, purple one-question-per-screen flow with the 8+ mark.
