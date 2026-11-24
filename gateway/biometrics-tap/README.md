@@ -7,8 +7,7 @@ and uploads it to Eight's cloud. This tap runs free-sleep's biometrics
 signal-processing over the *same* raw stream, locally, and publishes the
 results to Home Assistant over MQTT — **without replacing `dac`, patching the
 express server, or touching `frank` / `capybara` / `swupdate` / the `.RAW`
-files.** If the tap crashes, the bed does not notice. Warranty, OTA and the
-Eight app all keep working.
+files.** If the tap crashes, the bed does not notice.
 
 ## What you get in HA
 
