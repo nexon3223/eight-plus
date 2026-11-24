@@ -1,7 +1,7 @@
 # The Eight+ Pod gateway
 
 The gateway is the local option for a **Pod 3 on stock firmware**. Eight Sleep's own software keeps running
-(the official app, updates and the cloud keep working), and a few small services on the Pod publish it to
+(the official app and the cloud keep working), and a few small services on the Pod publish it to
 Home Assistant over MQTT.
 
 | Service | What it does | Entities (MQTT discovery, "Eight Sleep Pod" device) |
@@ -40,6 +40,36 @@ Home Assistant over MQTT.
    `eight_pod_led`.
 
 Each folder also has its own `install.sh` / `uninstall.sh` and README if you'd rather do it piece by piece.
+
+## How this differs from installing free-sleep
+
+Getting root is identical. Everything after you can SSH in is different, because free-sleep **replaces** the
+Pod's control software and the gateway **keeps** it.
+
+| | free-sleep | Eight+ gateway |
+|---|---|---|
+| Getting root (SD-card image, SSH on 8822 as `rewt`) | Its installation guide | **The same guide, same steps** |
+| After SSH | Runs free-sleep's `install.sh` (Node server, web UI) | Stop. Run `gateway/install.sh` instead |
+| Stock `dac` (Eight's cloud client) | Stopped and replaced — free-sleep takes over `dac.sock` | **Left running.** The proxy sits between it and `frankenfirmware` |
+| `frank`, `capybara` | Left running, but `capybara`'s heartbeat is no longer fed by `dac` | **Untouched.** Don't stop, disable or mask them |
+| Stock files changed | Several | One line of `/opt/eight/bin/frank.sh` (backed up as `.orig`) |
+| Internet on the Pod | Its guide has you block it | Needed once, for Python packages |
+| Undo | Reflash | `uninstall.sh` in each folder |
+
+Things that catch people out:
+
+- **Don't follow scripts that "disable dac / frankenfirmware / capybara".** Some rooting write-ups include that
+  step for free-sleep. With the gateway those services *are* the bed. If `dac` stops, `capybara` sees a stale
+  heartbeat and power-cycles the Pod's thermal controller every ~30 seconds.
+- **Already running free-sleep?** Remove it and re-enable the stock `dac` first. The two can't share `dac.sock`.
+- **A recovery reflash (holding the button) wipes `/persistent`** — your Pod-side history and settings go with it.
+- **A firmware update from Eight Sleep may remove the gateway.** The installer leaves Eight Sleep's updater
+  (`swupdate`) running, and the gateway hasn't been tested with an update. An update that replaces the Pod's
+  system files would most likely revert `frank.sh` and remove the `es-*` services, and possibly root access too.
+  If the MQTT entities go unavailable after an update, SSH in, check `systemctl status es-franken-proxy` and
+  re-run `install.sh`. If the update also wiped `/etc/eight-plus/gateway.conf`, it asks for your broker
+  again. If root is gone, you'd have to root the Pod again.
+- **Pod 3 Wi-Fi is WPA2 only.** On a WPA3 network the Pod sees no networks and hangs on "connecting".
 
 ## Why it exists
 
