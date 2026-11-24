@@ -10,7 +10,6 @@ arch:
   - amd64
 init: false
 ingress: true
-ingress_panel: true
 panel_icon: mdi:bed-king-outline
 panel_title: Eight+
 homeassistant_api: true
