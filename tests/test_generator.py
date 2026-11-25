@@ -141,6 +141,28 @@ def run_suggest(jinja_src):
     return j
 
 
+def check_identity(plan, label, a):
+    """Each sleeper's bed-temperature sensor carries who they are, for the iPhone app's onboarding:
+    name, side, climate, phone (kept even with notifications off), primary and helper prefix."""
+    sides = a["bed"]["sides"]
+    for i, s in enumerate(plan["summary"]["sleepers"]):
+        p = s["prefix"]
+        found = None
+        for path, text in plan["files"].items():
+            if not path.endswith(".yaml"):
+                continue
+            for block in (yaml.safe_load(text) or {}).get("template") or []:
+                for sensor in block.get("sensor") or []:
+                    if sensor.get("unique_id") == f"{p}_bed_temperature":
+                        found = sensor
+        assert found, f"{label}: no {p}_bed_temperature sensor"
+        want = {"eight_plus_sleeper": s["name"], "side": a["sleepers"][i]["side"],
+                "climate": sides[a["sleepers"][i]["side"]]["climate"],
+                "phone": a["sleepers"][i]["notify"], "primary": i == 0, "prefix": p}
+        got = found.get("attributes") or {}
+        assert got == want, f"{label}: {p} attributes {got!r} != {want!r}"
+
+
 def answers(bed, backend, couple, feats, sched=None):
     sides = list(bed["sides"])
     sl = [{"name": "Alex", "side": sides[0], "notify": "notify.mobile_app_alex"}]
@@ -176,8 +198,10 @@ def main():
         for couple in (False, True):
             for i, f in enumerate(mixes):
                 label = f"{b}/{'couple' if couple else 'solo'}/mix{i}"
-                plan = G.build(answers(det[b], b, couple, f), version="test")
+                a = answers(det[b], b, couple, f)
+                plan = G.build(a, version="test")
                 n = check_plan(plan, label)
+                check_identity(plan, label, a)
                 total += n
                 if dump:
                     d = os.path.join(dump, label.replace("/", "_"))

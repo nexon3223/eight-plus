@@ -389,7 +389,10 @@ def build(a, version="0.0.0"):
         name = clean_name(s["name"])
         slug = slugify(name)
         sleepers.append({"name": name, "slug": slug, "p": f"eight_sleep_{slug}", "side": s["side"],
-                         "notify": s.get("notify") or "", "primary": i == 0})
+                         "notify": s.get("notify") or "", "primary": i == 0,
+                         # the phone the wizard linked, kept even with notifications off: the iPhone
+                         # app uses it to tell which sleeper is holding it
+                         "phone": s.get("notify") or ""})
     if feat.get("notifications") is False:
         for s in sleepers:
             s["notify"] = ""
@@ -437,7 +440,8 @@ def build(a, version="0.0.0"):
             "SIDE": s["side"], "ROLE_NOTE": ", primary" if s["primary"] and len(sleepers) > 1 else "",
             "CLIMATE": own_c, "BEDS": beds, "ANY_ON": any_on, "SOLO_DUAL_NOTE": solo_note,
             "AWAY": f"input_boolean.{p}_away_mode", "PRESENCE": side["presence"],
-            "NOTIFY": s["notify"] or "notify.notify", "SCORE": score or f"sensor.{p}_sleep_score",
+            "NOTIFY": s["notify"] or "notify.notify", "PHONE": s["phone"],
+            "PRIMARY": "true" if s["primary"] else "false", "SCORE": score or f"sensor.{p}_sleep_score",
             "WEATHER": room.get("weather") or "", "DASH_URL": f"/{dash_path}/{s['slug']}",
             "BED_TEMP_TPL": bt_tpl, "BED_TEMP_AVAIL": bt_avail,
             "SUGGEST_ARGS": ", ".join(_q(x).replace('"', "'") for x in (

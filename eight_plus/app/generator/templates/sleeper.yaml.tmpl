@@ -19,6 +19,14 @@ template:
         state_class: measurement
         availability: "{{ ${BED_TEMP_AVAIL} }}"
         state: "{{ ${BED_TEMP_TPL} }}"
+        # who this is, for the Eight+ iPhone app's onboarding (static, not templates)
+        attributes:
+          eight_plus_sleeper: "${NAME}"
+          side: "${SIDE}"
+          climate: "${CLIMATE}"
+          phone: "${PHONE}"
+          primary: ${PRIMARY}
+          prefix: "${P}"
 #if autopilot
 
       # Autopilot's suggestion. The model lives in custom_templates/eight_plus.jinja.

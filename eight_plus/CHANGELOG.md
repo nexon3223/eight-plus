@@ -1,5 +1,10 @@
 # Changelog
 
+## Unreleased
+
+- Each sleeper's bed-temperature sensor now carries their name, side and phone, so the Eight+ iPhone
+  app can set itself up. Press **Apply update** in the Eight+ panel.
+
 ## 0.1.3
 
 - **One bed everywhere.** The card always shows the photo bed with the Tide dot field. The older drawn bed is
