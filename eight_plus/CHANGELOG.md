@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.1.2
+
+- The home panel no longer shows **Recent sleep scores** (it was empty on a fresh install).
+- Docs: sleep reports are marked experimental, and full third-party licence texts are included.
+
 ## 0.1.1
 
 - **Fix: the add-on couldn't talk to Home Assistant when installed from the store** ("Invalid access

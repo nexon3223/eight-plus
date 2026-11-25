@@ -10,7 +10,7 @@
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2024.10%2B-41BDF5?logo=homeassistant&logoColor=white">
   <a href="#3-recommended-get-card-updates-through-hacs"><img alt="HACS" src="https://img.shields.io/badge/HACS-custom-41BDF5"></a>
   <br>
-  <img alt="Home Assistant app" src="https://img.shields.io/badge/HA%20app-v0.1.1-7c3aed">
+  <img alt="Home Assistant app" src="https://img.shields.io/badge/HA%20app-v0.1.2-7c3aed">
   <img alt="card" src="https://img.shields.io/badge/card-v10.43-7c3aed">
   <img alt="gateway" src="https://img.shields.io/badge/gateway-tested%20on%20Pod%203%20only-c2410c">
   <img alt="backends" src="https://img.shields.io/badge/backends-cloud%20%7C%20free--sleep%20%7C%20gateway-4b5563">
@@ -388,6 +388,7 @@ to write if any survive.
   free-sleep's biometrics.
 - **[eight_sleep](https://github.com/lukas-clarke/eight_sleep)** (lukas-clarke, MIT) for the cloud backend, and
   the raw heating-level → °C table.
-- **[hass-free-sleep](https://github.com/Mrtenz/hass-free-sleep)** (Mrtenz) for the free-sleep backend.
+- **[hass-free-sleep](https://github.com/Mrtenz/hass-free-sleep)** (Mrtenz, MIT) for the free-sleep backend.
+- **[Lucide](https://github.com/lucide-icons/lucide)** (ISC, with some icons from [Feather](https://github.com/feathericons/feather), MIT) for the card's icons.
 
 MIT licensed — see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
