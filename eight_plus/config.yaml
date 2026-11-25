@@ -1,6 +1,7 @@
 name: Eight+
 version: "0.1.2"
 slug: eight_plus
+image: ghcr.io/nexon3223/{arch}-eight-plus
 description: >-
   Guided setup for the Eight+ card — Autopilot, schedules, sleep reports
   and a no-login Pod app — for Eight Sleep Pods on the cloud, free-sleep or the Eight+ gateway.

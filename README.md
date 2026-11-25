@@ -315,8 +315,8 @@ Assistant through one of the three backends above.
 [![Open your Home Assistant instance and show the add add-on repository dialog.](https://my.home-assistant.io/badges/supervisor_add_addon_repository.svg)](https://my.home-assistant.io/redirect/supervisor_add_addon_repository/?repository_url=https%3A%2F%2Fgithub.com%2Fnexon3223%2Feight-plus)
 
 Or go to **Settings → Apps → Install app → ⋮ → Repositories** (called *Add-ons → Add-on store* on Home Assistant
-before 2026.11) and add `https://github.com/nexon3223/eight-plus`. Then install **Eight+** and start it. The first
-start builds the app on your machine, which takes a few minutes.
+before 2026.11) and add `https://github.com/nexon3223/eight-plus`. Then install **Eight+** and start it. Home Assistant
+downloads a ready-built app, so it installs in seconds.
 
 ### 2. Open Eight+ from the sidebar and follow the setup
 
