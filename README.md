@@ -248,6 +248,14 @@ disable any of the Pod's own services. Full steps, a side-by-side with free-slee
 Eight+ has a native iPhone app. It signs in to your own Home Assistant. It isn't on the App Store or TestFlight, so
 you install it by **sideloading** the `.ipa` (for example with AltStore, Sideloadly or Feather).
 
+**[Download the app (unsigned `.ipa`)](https://github.com/nexon3223/eight-plus/releases/latest)** from the latest
+release, then sign it and install it with your sideloading tool. On first launch, sign in with your Home Assistant
+login or a long-lived access token. The app finds your Pod's entities by itself.
+
+> **Widgets, Control Centre controls and Live Activity buttons need a shared sign-in.** A sideloaded app has no
+> App Group unless your signing tool adds one, so the widget extension can't see the app's login. If they show
+> no data, the app itself still works fully.
+
 - **Launches instantly.** It's native SwiftUI, not a web page in a wrapper, so it opens straight away and stays smooth with no lag.
 - **Bed animations.** The bed animates as each side heats or cools.
 - **Solo and dual temperature control.** One temperature for the whole bed, or each side on its own.
