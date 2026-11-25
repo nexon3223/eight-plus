@@ -1,8 +1,8 @@
 #!/bin/bash
 # Eight+ Pod gateway — run ON the Pod as root (a Pod 3 on stock firmware, rooted; see README.md).
 #
-#   tar czf - -C eight-plus gateway | ssh -p 8822 rewt@<pod-ip> 'cat > /tmp/gw.tgz'
 #   ssh -p 8822 rewt@<pod-ip>
+#   curl -fsSL https://github.com/nexon3223/eight-plus/releases/latest/download/eight-plus-gateway.tar.gz -o /tmp/gw.tgz
 #   sudo mkdir -p /tmp/gw && sudo tar xzf /tmp/gw.tgz -C /tmp/gw && sudo bash /tmp/gw/gateway/install.sh
 #
 # Writes /etc/eight-plus/gateway.conf (your MQTT broker) once, then installs, in order:

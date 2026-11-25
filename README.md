@@ -240,7 +240,15 @@ All of them appear on one **Eight Sleep Pod** device in Home Assistant, through 
 Getting root uses the **same process free-sleep uses**. Follow [free-sleep's installation
 guide](https://github.com/throwaway31265/free-sleep/blob/main/INSTALLATION.md) until you can SSH in, then stop
 there and run the gateway's one-shot installer instead of free-sleep's. Unlike free-sleep, don't stop or
-disable any of the Pod's own services. Full steps, a side-by-side with free-sleep and why it exists are in
+disable any of the Pod's own services. The gateway is attached to every
+[release](https://github.com/nexon3223/eight-plus/releases) as `eight-plus-gateway.tar.gz`, so the Pod can download
+it directly:
+
+```bash
+curl -fsSL https://github.com/nexon3223/eight-plus/releases/latest/download/eight-plus-gateway.tar.gz -o /tmp/gw.tgz
+sudo mkdir -p /tmp/gw && sudo tar xzf /tmp/gw.tgz -C /tmp/gw && sudo bash /tmp/gw/gateway/install.sh
+```
+ Full steps, a side-by-side with free-sleep and why it exists are in
 [`gateway/README.md`](gateway/README.md#how-this-differs-from-installing-free-sleep).
 
 ### 4. iOS app — native, sideloaded
