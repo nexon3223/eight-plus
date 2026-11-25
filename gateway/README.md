@@ -1,8 +1,10 @@
 # The Eight+ Pod gateway
 
-The gateway is the local option for a **Pod 3 on stock firmware**. Eight Sleep's own software keeps running
-(the official app and the cloud keep working), and a few small services on the Pod publish it to
-Home Assistant over MQTT.
+The gateway is the local option for a **Pod 3 on stock firmware**. Eight Sleep's own control software keeps
+running on the Pod, and a few small services publish it to Home Assistant over MQTT.
+
+> **The Eight Sleep app is not supported.** It doesn't work on the maintainer's Pod, and it hasn't been tested on
+> a Pod that's still paired to an Eight Sleep account. Home Assistant is how you control the bed.
 
 | Service | What it does | Entities (MQTT discovery, "Eight Sleep Pod" device) |
 |---|---|---|

@@ -7,8 +7,8 @@ Stock: `dac` binds `/deviceinfo/dac.sock`, `frankenfirmware` connects to it,
 traffic is newline-framed request/response. This proxy sits in the middle:
 `frankenfirmware -> /run/es-franken.sock (proxy) -> /deviceinfo/dac.sock (dac)`.
 It relays every dac exchange verbatim and, between them, injects locally-queued
-`HEAT_LEFT/RIGHT` + `LEVEL_LEFT/RIGHT` commands. `dac` still does cloud, the
-heartbeat and telemetry, so the Eight app + warranty + `capybara` are untouched.
+`HEAT_LEFT/RIGHT` + `LEVEL_LEFT/RIGHT` commands. `dac` keeps running and still
+feeds `capybara`'s heartbeat, so the stock stack stays in charge of the bed.
 
 ## HA entities (on the "Eight Sleep Pod" device, via MQTT)
 

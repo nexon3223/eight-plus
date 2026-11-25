@@ -147,8 +147,10 @@ After install, the panel becomes a home screen. It shows:
 
 ### 3. The Pod 3 gateway — local control on stock firmware
 
-The gateway is **not replacement firmware**. Eight Sleep's own software keeps running, so the official app and
-the cloud keep working (see the note on firmware updates below). Four small services on the Pod listen to it and publish to Home Assistant
+The gateway is **not replacement firmware**. Eight Sleep's own control software keeps running on the Pod, and the
+gateway listens in rather than replacing it. **Don't count on the Eight Sleep app, though.** It doesn't work on
+the maintainer's Pod, and nobody has tested it on a Pod that's still paired to an Eight Sleep account. Plan on
+Home Assistant being how you control the bed. Four small services on the Pod listen to it and publish to Home Assistant
 over MQTT:
 
 | Service | What it does |
