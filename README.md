@@ -1,4 +1,4 @@
-<h1 align="center">Eight+ · Your Pod, Unlocked and run by Home Assistant</h1>
+<h1 align="center">Eight+ · Your Pod, unlocked and run by Home Assistant</h1>
 
 <p align="center">
   <img src="docs/images/hero.png" alt="Eight+ — the Eight+ card showing a Pod cooling in Solo mode" width="880">
@@ -10,7 +10,7 @@
   <img alt="Home Assistant" src="https://img.shields.io/badge/Home%20Assistant-2024.10%2B-41BDF5?logo=homeassistant&logoColor=white">
   <a href="#3-recommended-get-card-updates-through-hacs"><img alt="HACS" src="https://img.shields.io/badge/HACS-custom-41BDF5"></a>
   <br>
-  <img alt="Home Assistant app" src="https://img.shields.io/badge/HA%20app-v0.1.2-7c3aed">
+  <a href="https://github.com/nexon3223/eight-plus/releases/latest"><img alt="Home Assistant app" src="https://img.shields.io/github/v/release/nexon3223/eight-plus?label=HA%20app&color=7c3aed"></a>
   <img alt="card" src="https://img.shields.io/badge/card-v10.43-7c3aed">
   <img alt="gateway" src="https://img.shields.io/badge/gateway-tested%20on%20Pod%203%20only-c2410c">
   <img alt="backends" src="https://img.shields.io/badge/backends-cloud%20%7C%20free--sleep%20%7C%20gateway-4b5563">
@@ -248,7 +248,8 @@ it directly:
 curl -fsSL https://github.com/nexon3223/eight-plus/releases/latest/download/eight-plus-gateway.tar.gz -o /tmp/gw.tgz
 sudo mkdir -p /tmp/gw && sudo tar xzf /tmp/gw.tgz -C /tmp/gw && sudo bash /tmp/gw/gateway/install.sh
 ```
- Full steps, a side-by-side with free-sleep and why it exists are in
+
+Full steps, a side-by-side with free-sleep and why it exists are in
 [`gateway/README.md`](gateway/README.md#how-this-differs-from-installing-free-sleep).
 
 ### 4. iOS app — native, sideloaded
@@ -373,7 +374,7 @@ SSH, your Pod.
 
 ## How this was built, and who maintains it
 
-Eight+ was built by one person ([@nexon3223](https://github.com/nexon3223)) for their own bed, using
+I ([@nexon3223](https://github.com/nexon3223)) built Eight+ for my own bed, using
 [Claude Code](https://claude.com/claude-code) as a coding assistant. Commits it helped with say so. I review every
 change, and the card, the Home Assistant app and the gateway run every night on my own Pod 3.
 
