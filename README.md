@@ -1,4 +1,4 @@
-<h1 align="center">Eight+ · Your Eight Sleep Pod, run by Home Assistant</h1>
+<h1 align="center">Eight+ · Your Pod, Unlocked and run by Home Assistant</h1>
 
 <p align="center">
   <img src="docs/images/hero.png" alt="Eight+ — the Eight+ card showing a Pod cooling in Solo mode" width="880">
