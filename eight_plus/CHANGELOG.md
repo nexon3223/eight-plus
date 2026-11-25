@@ -1,5 +1,15 @@
 # Changelog
 
+## 0.1.3
+
+- **One bed everywhere.** The card always shows the photo bed with the Tide dot field. The older drawn bed is
+  gone, and the bed art is now built into the card, so a HACS-only install (no `bed_image` set) gets the same
+  bed as the app's dashboard.
+- The bed glow follows a tuned, rounded mattress outline.
+- **Installs in seconds.** Home Assistant now downloads a ready-built app image from ghcr.io instead of building
+  it on your machine.
+- The Pod gateway is attached to every release as `eight-plus-gateway.tar.gz`, so the Pod can download it directly.
+
 ## 0.1.2
 
 - The home panel no longer shows **Recent sleep scores** (it was empty on a fresh install).

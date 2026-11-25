@@ -20,7 +20,7 @@ body:
     attributes:
       label: Versions
       description: Pod model, Home Assistant version, Eight+ app version, card version
-      placeholder: Pod 3, HA 2026.11.2, Eight+ 0.1.2, card v10.43
+      placeholder: Pod 3, HA 2026.11.2, Eight+ 0.1.3, card v10.43
     validations: {required: true}
   - type: textarea
     id: what

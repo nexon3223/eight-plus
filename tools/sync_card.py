@@ -20,6 +20,8 @@ The development card's inline defaults are one real household's entities. The pu
   • points the gateway preset's sleep score at the matching side and its Solo/Dual helper at
     input_boolean.eight_plus_dual_mode
   • strips personal names from comments
+  • retires the drawn SVG bed: the photo bed + Tide dot field is the only bed, with its art
+    embedded (WebP data URIs) so a card with no bed_image still gets it
 and then REFUSES to write anything if a personal string is still present (see LEAKS).
 
 Patches applied to the app shell so one build serves any household:
@@ -112,6 +114,61 @@ function _presetFor(source, entity) {
   return out;
 }
 """
+
+# The photo bed (es-bed.png + the Tide dot field) is the ONLY bed in the public build. The drawn
+# BED_SVG is retired, and a card with no bed_image (HACS-only installs) uses this embedded art.
+# Geometry = the maintainer's tuned 28-point mattress outline (the halves are card defaults).
+BED_ART = {
+    "glow_poly": "22.1% 13.3%, 22.2% 13.0%, 22.3% 12.8%, 22.5% 12.6%, 22.7% 12.5%, 23.0% 12.5%, 23.4% 12.4%, "
+                 "75.7% 11.8%, 76.1% 11.8%, 76.4% 11.9%, 76.6% 12.0%, 76.8% 12.1%, 76.9% 12.3%, 77.0% 12.6%, "
+                 "85.3% 53.3%, 85.3% 53.5%, 85.2% 53.8%, 85.1% 53.9%, 84.8% 54.0%, 84.5% 54.1%, 84.0% 54.1%, "
+                 "15.1% 53.9%, 14.7% 53.9%, 14.4% 53.8%, 14.1% 53.7%, 13.9% 53.5%, 13.9% 53.3%, 13.9% 53.1%",
+    "pillow_style": "top:-10.7%; left:18.8%; width:62%;",
+    "pillow_shadow": "drop-shadow(0 8px 3px rgba(0,0,0,0.65)) drop-shadow(0 20px 8px rgba(0,0,0,0.43))",
+}
+
+BED_DEFAULTS = (
+    "    // public build: the photo bed with the Tide dot field is the only bed (the drawn SVG bed is\n"
+    "    // retired). With no bed_image configured the card uses its own embedded art.\n"
+    "    if (!this._config.bed_image) {\n"
+    "      const c = this._config;\n"
+    "      c.bed_image = ES_BED_IMG;\n"
+    "      if (!c.pillow_image) c.pillow_image = ES_PILLOWS_IMG;\n"
+    "      for (const [k, v] of Object.entries(ES_BED_ART)) if (c[k] == null) c[k] = v;\n"
+    "    }\n"
+)
+
+
+def _webp_data_uri(path):
+    """es-bed.png is ~450 KB; as a WebP (alpha kept) it's ~95 KB, small enough to embed."""
+    import base64
+    import io
+    from PIL import Image
+    buf = io.BytesIO()
+    Image.open(path).save(buf, "WEBP", quality=85, method=6)
+    return "data:image/webp;base64," + base64.b64encode(buf.getvalue()).decode()
+
+
+def retire_svg_bed(s, bed_png, pillows_png):
+    """Replace the drawn BED_SVG with the embedded photo-bed art. Idempotent."""
+    if "const ES_BED_IMG" in s:
+        return s
+    consts = (
+        "// the bed art (embedded so a HACS-only install still gets the real bed)\n"
+        f"const ES_BED_IMG = \"{_webp_data_uri(bed_png)}\";\n"
+        f"const ES_PILLOWS_IMG = \"{_webp_data_uri(pillows_png)}\";\n"
+        f"const ES_BED_ART = {json.dumps(BED_ART, indent=2)};\n"
+    )
+    s, n1 = re.subn(r"const BED_SVG = `.*?</svg>`;\n", lambda m: consts, s, count=1, flags=re.S)
+    s, n2 = re.subn(r"\n(\s+)bed\.innerHTML = BED_SVG;\n",
+                    r'\n\1bed.innerHTML = "";  // the drawn SVG bed is retired: bed_image always set\n', s, count=1)
+    anchor = "      preset,\n      config\n    );\n"
+    n3 = s.count(anchor)
+    s = s.replace(anchor, anchor + BED_DEFAULTS, 1)
+    if (n1, n2, n3) != (1, 1, 1) or "BED_SVG" in s:
+        sys.exit(f"public build: couldn't retire the SVG bed ({n1}, {n2}, {n3})")
+    return s
+
 
 def _defaults_line(line):
     m = re.match(r'^(\s+[a-z0-9_]+: )"([^"]*)"(,.*)$', line)
@@ -227,6 +284,8 @@ def main():
         sys.exit(f"no card at {card_path}")
 
     card = public_card(open(card_path, encoding="utf-8").read())
+    card = retire_svg_bed(card, os.path.join(src, "images", "es-bed.png"),
+                          os.path.join(src, "images", "es-pillows.png"))
     check("eight-sleep-card.js", card)
 
     pub = os.path.join(src, "kiosk", "public")

@@ -80,6 +80,23 @@ if (source === "cloud") {            // lukas-clarke/eight_sleep: "<first name>'
     "binary_sensor.eight_sleep_pod_priming": st("off"), "sensor.eight_sleep_pod_health": st("ok", { checks: [] }) });
 }
 
+// ?l=27&r=33 — both sides on at these targets (left resting at target, right still warming),
+// both sleepers in bed: the README / cover screenshots
+// ?solo=1&l=27 — Solo mode: one dot field across the whole bed at the left side's target
+const qp = new URLSearchParams(location.search), SOLO = qp.get("solo") === "1";
+const TL = parseFloat(qp.get("l")), TR = SOLO ? TL : parseFloat(qp.get("r"));
+if (Number.isFinite(TL) && Number.isFinite(TR)) {
+  // &c=27 — the bed's current temperature (default: at target); below/above target = working
+  const CUR = Number.isFinite(parseFloat(qp.get("c"))) ? parseFloat(qp.get("c")) : TL;
+  states[own] = climate(true, TL, CUR);
+  states[other] = climate(true, TR, SOLO ? CUR : TR - 2.5);
+  for (const id of Object.keys(states)) if (/^sensor\..*_bed_temperature$/.test(id)) states[id] = st(CUR, { unit_of_measurement: "°C" });
+  // Solo shots: nobody in bed, so no presence body-print on the dot field
+  for (const id of Object.keys(states)) if (/^binary_sensor\..*(presence|bed_presence)$/.test(id)) states[id] = st(SOLO ? "off" : "on");
+  // cloud: Solo/Dual is the side sensor
+  if (SOLO) for (const id of Object.keys(states)) if (/^sensor\..*_eight_sleep_side_side$/.test(id)) states[id] = st("solo");
+}
+
 // ── the helpers the add-on generates for each sleeper ─────────────────────────────────
 for (const p of [P, PP]) {
   ["bedtime", "winddown", "early", "late", "deep", "prewake", "wake", "auto_off", "weekday_bedtime", "weekday_alarm",
@@ -94,7 +111,12 @@ for (const p of [P, PP]) {
     [`input_boolean.${p}_away_mode`]: st("off"), [`input_boolean.${p}_off_when_up`]: st("on"), [`binary_sensor.${p}_in_bed`]: st("on"),
   });
 }
-if (source !== "cloud") states["input_boolean.eight_plus_dual_mode"] = st("on");
+if (source !== "cloud") states["input_boolean.eight_plus_dual_mode"] = st(SOLO ? "off" : "on");
+if (Number.isFinite(TL) && Number.isFinite(TR)) {   // Autopilot is holding the requested targets
+  states[`sensor.${P}_suggested_temp`] = st(TL, { env_base: TL, boost: 0, rate: 0, unit_of_measurement: "°C" });
+  states[`sensor.${PP}_suggested_temp`] = st(TR, { env_base: TR, boost: 0, rate: 0, unit_of_measurement: "°C" });
+  if (SOLO) for (const p of [P, PP]) states[`binary_sensor.${p}_in_bed`] = st("off");
+}
 
 // ── mock hass ─────────────────────────────────────────────────────────────────────────
 const cards = [], calls = [];
