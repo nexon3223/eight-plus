@@ -14,8 +14,10 @@
   <img alt="card" src="https://img.shields.io/badge/card-v10.43-7c3aed">
   <img alt="gateway" src="https://img.shields.io/badge/gateway-tested%20on%20Pod%203%20only-c2410c">
   <img alt="backends" src="https://img.shields.io/badge/backends-cloud%20%7C%20free--sleep%20%7C%20gateway-4b5563">
-  <br>
-  <a href="https://buymeacoffee.com/nexon3223"><img alt="Buy me a coffee" src="https://img.shields.io/badge/Buy%20me%20a%20coffee-support%20Eight%2B-FFDD00?logo=buymeacoffee&logoColor=black"></a>
+</p>
+
+<p align="center">
+  <a href="https://buymeacoffee.com/nexon3223"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="48"></a>
 </p>
 
 > **Independent project.** Eight+ is not affiliated with, endorsed by or supported by Eight Sleep. "Eight Sleep"
@@ -387,6 +389,15 @@ tools/dev.sh                                 # the panel on :8099 against your r
 The card and the gateway are developed in the maintainer's own repos and published here by `tools/sync_card.py`
 and `tools/sync_gateway.py`. They swap one household's entity names and credentials for generic ones, and refuse
 to write if any survive.
+
+## Support Eight+
+
+Eight+ is free and built in my spare time. If it makes your nights better, you can buy me a coffee. It helps keep
+it maintained.
+
+<p>
+  <a href="https://buymeacoffee.com/nexon3223"><img src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png" alt="Buy me a coffee" height="48"></a>
+</p>
 
 ## Credits
 
