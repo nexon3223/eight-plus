@@ -388,6 +388,7 @@ to write if any survive.
   free-sleep's biometrics.
 - **[eight_sleep](https://github.com/lukas-clarke/eight_sleep)** (lukas-clarke, MIT) for the cloud backend, and
   the raw heating-level → °C table.
-- **[hass-free-sleep](https://github.com/Mrtenz/hass-free-sleep)** (Mrtenz) for the free-sleep backend.
+- **[hass-free-sleep](https://github.com/Mrtenz/hass-free-sleep)** (Mrtenz, MIT) for the free-sleep backend.
+- **[Lucide](https://github.com/lucide-icons/lucide)** (ISC, with some icons from [Feather](https://github.com/feathericons/feather), MIT) for the card's icons.
 
 MIT licensed — see [LICENSE](LICENSE) and [THIRD_PARTY_NOTICES.md](THIRD_PARTY_NOTICES.md).
