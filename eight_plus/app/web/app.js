@@ -407,10 +407,6 @@ function vDone() {
 
 function vHome() {
   const st = S.status, ins = st.install || {}, sl = st.sleep || {}, dr = st.drift || {};
-  const nights = Object.entries(sl.nights || {}).map(([name, n]) => {
-    const vals = Object.entries(n);
-    return `<div><h3>${esc(name)}</h3>${vals.length ? `<div class="nights">${vals.map(([d, v]) => `<div style="height:${Math.max(6, v || 0)}%" title="${d}"><span>${v ?? "–"}</span></div>`).join("")}</div>` : '<p class="muted small">No nights yet — the first report lands the morning after.</p>'}</div>`;
-  }).join("");
   const upd = (dr.update || []).length, edited = (dr.edited || []).length;
   return `<div class="screen fade">${head(`Installed · v${esc(ins.version)}`, "Eight+ is running.",
       `${esc(({ gateway: "Eight+ Pod gateway", freesleep: "free-sleep", cloud: "Eight Sleep cloud" })[st.backend] || "")} · ${(ins.sleepers || []).map((s) => `${esc(s.name)} (${s.side})`).join(" · ")}`)}
@@ -421,8 +417,6 @@ function vHome() {
       <div class="glass stat"><div class="k">Card</div><div class="v s">${esc((ins.card || {}).mode === "hacs" ? "HACS" : "Bundled")}</div></div>
     </div>
     ${sl.last_error ? `<div class="note bad gap">${esc(sl.last_error)}</div>` : ""}
-    <div class="label" style="display:flex;align-items:center">Recent sleep scores<span style="flex:1"></span><button class="btn link small" style="height:auto;padding:0;font-size:12px;letter-spacing:0;text-transform:none" data-act="runpipe">Run now</button></div>
-    <div class="glass"><div class="grid two">${nights || '<p class="muted small" style="margin:0">Sleep reports are off.</p>'}</div></div>
     <div class="glass" style="margin-top:12px"><div class="toggle" style="padding:0"><div class="txt"><h3>Pod app on your Wi-Fi</h3><p>${st.app.enabled ? `Running at <span class="url">${esc(appUrl())}</span>` : "A no-login app for phones at home. Anyone on your network can control the bed."}</p></div>
       <label class="switch"><input type="checkbox" data-act="standalone" ${st.app.enabled ? "checked" : ""}><span></span></label></div></div>
     <div id="filesbox"></div>
@@ -509,7 +503,6 @@ document.addEventListener("click", async (e) => {
     if (act === "home") { S.view = "home"; await refresh(); }
     if (act === "rerun") { prefill(); S.view = "wizard"; goto("backend"); }
     if (act === "update") { await api("api/update", {}); S.view = "install"; S.progress = null; render(); poll(); }
-    if (act === "runpipe") { await api("api/pipeline/run", {}); el.textContent = "Running…"; setTimeout(refresh, 4000); }
     if (act === "files") { const j = await api("api/files"); $("#filesbox").innerHTML = `<div class="glass" style="margin-top:12px">${Object.entries(j.files).map(([k, v]) => `<details><summary class="mono">${esc(k)}</summary><pre>${esc(v)}</pre></details>`).join("")}<details><summary>Card config</summary><pre>${esc(JSON.stringify(j.cards, null, 2))}</pre></details></div>`; }
     if (act === "uninstall") {
       if (!confirm("Remove Eight+? This deletes the Eight+ helpers, automations, sensors and dashboard. Your backups and sleep history are kept.")) return;

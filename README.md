@@ -22,6 +22,11 @@
 > The gateway builds on [free-sleep](https://github.com/throwaway31265/free-sleep)'s rooting guide and biometrics
 > code; see [Credits](#credits) and [Third-party notices](THIRD_PARTY_NOTICES.md).
 
+> [!WARNING]
+> **Sleep data is experimental.** Sleep reports (scores, time asleep, stages, HRV and so on) don't really work
+> reliably yet and aren't very accurate. Treat the numbers as rough estimates, not medical or sleep-tracking data.
+> Bed control, schedules and Autopilot don't depend on them.
+
 ---
 
 ## ✨ Feature highlights
@@ -39,6 +44,7 @@
   and every offset is a helper you can tune.
 - **Sleep reports.** A 0–100 score, time asleep, efficiency, resting heart rate, HRV, breathing, an estimated
   hypnogram and 30 nights of history. They're computed on your own Home Assistant box, with no subscription.
+  *Experimental: not very accurate yet — see the note above.*
 - **Guided setup.** A Home Assistant app (formerly called an add-on) that finds your Pod and asks a few questions.
   It then writes every helper, schedule, alarm, automation and notification for you, and shows you each file
   before it touches anything.
@@ -102,7 +108,7 @@ entity: climate.eight_sleep_pod_left
 For a two-sleeper bed, point a second card at the other side's climate entity. Without the Home Assistant app,
 any feature whose helpers don't exist simply hides. Every option is documented at the top of `eight-sleep-card.js`.
 
-### 2. The Eight+ Home Assistant app — setup that does the boring part
+### 2. The Eight+ Home Assistant app setup wizard
 
 <p align="center">
   <img src="docs/images/screens/wiz-1-backend.png" alt="Connect: how Home Assistant reaches your Pod" width="160">
@@ -140,7 +146,7 @@ fails, it rolls back on its own. Values you change later are never overwritten.
 
 After install, the panel becomes a home screen. It shows:
 
-- connection status and recent sleep scores, with **Run now** for the sleep reports
+- connection status for Home Assistant, sleep reports and the card
 - a switch for the **Pod app**, a no-login version of the card for phones on your Wi-Fi (its proxy can only
   see the bed)
 - **View YAML**, **Change setup** and **Uninstall**
@@ -250,6 +256,10 @@ you install it by **sideloading** the `.ipa` (for example with AltStore, Sideloa
 - **Toggles and custom chips.** Pick entities from your Home Assistant and add them to the Home screen as chips.
 - **Alarm and schedule.** Bedtimes and wake-ups, with heat-alarm and vibration-alarm toggles. Vibration alarms only work through the Pod 3 gateway's local MQTT bridge.
 - **Sleep statistics.** *Still a work in progress.*
+- **Apple Health import.** Send each night to Apple Health: time in bed and asleep, resting heart rate, HRV,
+  breath rate, overnight heart rate and estimated stages. Choose how much (Off, Time asleep, Sleep and heart,
+  Everything, or your own mix). Re-sending a night replaces it rather than doubling it. Same accuracy caveat as
+  the sleep reports applies.
 - **Pod settings.** Watchdog, subsystems, Pod light control and developer settings.
 - **Live Activities.** See the Pod on your Lock Screen and in the Dynamic Island.
 - **Native iOS widgets.** Small, medium and large Home Screen widgets, with ± buttons that work right from the widget.
@@ -290,7 +300,7 @@ start builds the app on your machine, which takes a few minutes.
 
 ### 2. Open Eight+ from the sidebar and follow the setup
 
-See [the Home Assistant app](#2-the-eight-home-assistant-app--setup-that-does-the-boring-part) above.
+See [the Home Assistant app](#2-the-eight-home-assistant-app-setup-wizard) above.
 
 ### 3. (Recommended) Get card updates through HACS
 
