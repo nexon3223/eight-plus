@@ -24,13 +24,17 @@ running on the Pod, and a few small services publish it to Home Assistant over M
    up to the point where you can SSH in (port 8822, user `rewt`), then stop — don't install the free-sleep
    server.
 2. **Have an MQTT broker** that Home Assistant uses (the Mosquitto add-on is fine) and a user for the Pod.
-3. **Copy and run the installer** from a computer with this repository checked out:
+3. **Download and run the installer on the Pod.** Every [release](https://github.com/nexon3223/eight-plus/releases)
+   has the gateway attached as `eight-plus-gateway.tar.gz`. SSH in, then:
 
    ```bash
-   tar czf - gateway | ssh -p 8822 rewt@<pod-ip> 'cat > /tmp/gw.tgz'
-   ssh -p 8822 rewt@<pod-ip>
+   curl -fsSL https://github.com/nexon3223/eight-plus/releases/latest/download/eight-plus-gateway.tar.gz -o /tmp/gw.tgz
    sudo mkdir -p /tmp/gw && sudo tar xzf /tmp/gw.tgz -C /tmp/gw && sudo bash /tmp/gw/gateway/install.sh
    ```
+
+   For a specific version, swap `latest/download` for `download/v0.1.2` (or whichever tag). From a computer with
+   this repository checked out you can copy it over instead:
+   `tar czf - gateway | ssh -p 8822 rewt@<pod-ip> 'cat > /tmp/gw.tgz'`, then run the second line on the Pod.
 
    It asks for the broker once and keeps it in `/etc/eight-plus/gateway.conf` (root-only), then installs the
    proxy, the biometrics tap and the watchdog. Add `--with-led` for the LED. The Pod needs internet once,
