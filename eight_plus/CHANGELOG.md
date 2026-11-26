@@ -1,9 +1,23 @@
 # Changelog
 
-## Unreleased
+## 0.1.4
 
 - Each sleeper's bed-temperature sensor now carries their name, side and phone, so the Eight+ iPhone
   app can set itself up. Press **Apply update** in the Eight+ panel.
+
+### iOS app (attached to this release)
+
+- **Half-degree control.** On the Pod 3 gateway and free-sleep, the dials, + / − and the schedule move in
+  0.5° steps. The Eight Sleep cloud integration only takes whole degrees, so the app steps by 1° there: it
+  follows each bed's own step from Home Assistant.
+- **Shows what the bed holds.** A half you pick shows as that half; a target Autopilot set shows as the bed
+  holds it ("26.3°"), the same number Home Assistant shows. The Autopilot toast, widgets, Control Centre and
+  the Live Activity match too.
+- **In-between colours.** 27° is purple; half a degree off it is purple leaning blue or orange.
+- **Fixes:** the Pre-cool / Pre-heat + and − buttons now respond; the Schedule says "Alarm off" instead of a
+  next alarm that won't ring; the compact temperature block steps like the big one.
+- Smart wake is gone from the Schedule (the Pod can't tell light sleep), Snooze is a button on the phone's
+  alarm card, and the vibration pattern offers only what the Pod has (Rise, Pulse).
 
 ## 0.1.3
 
